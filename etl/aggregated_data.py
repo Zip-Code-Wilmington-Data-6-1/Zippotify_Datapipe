@@ -113,6 +113,44 @@ top_artists.columns = ['artist', 'play_count']
 top_songs = listen.groupby(['artist', 'song']).size().reset_index(name='play_count')
 top_songs = top_songs.sort_values('play_count', ascending=False).head(20)
 
+# Top songs by state (top 5 songs per state)
+def get_top_songs_by_state(df, top_n=5):
+    """Get top N songs for each state"""
+    state_songs = df.groupby(['state', 'artist', 'song']).size().reset_index(name='play_count')
+    
+    # Get top songs per state
+    top_songs_by_state = []
+    for state in state_songs['state'].unique():
+        state_data = state_songs[state_songs['state'] == state].sort_values('play_count', ascending=False).head(top_n)
+        state_data['rank'] = range(1, len(state_data) + 1)
+        top_songs_by_state.append(state_data)
+    
+    return pd.concat(top_songs_by_state, ignore_index=True)
+
+top_songs_by_state = get_top_songs_by_state(listen, top_n=5)
+
+# Also create a summary showing #1 song per state
+top_song_per_state = top_songs_by_state[top_songs_by_state['rank'] == 1][['state', 'artist', 'song', 'play_count']].reset_index(drop=True)
+
+# Top artists by state (top 5 artists per state)
+def get_top_artists_by_state(df, top_n=5):
+    """Get top N artists for each state"""
+    state_artists = df.groupby(['state', 'artist']).size().reset_index(name='play_count')
+    
+    # Get top artists per state
+    top_artists_by_state = []
+    for state in state_artists['state'].unique():
+        state_data = state_artists[state_artists['state'] == state].sort_values('play_count', ascending=False).head(top_n)
+        state_data['rank'] = range(1, len(state_data) + 1)
+        top_artists_by_state.append(state_data)
+    
+    return pd.concat(top_artists_by_state, ignore_index=True)
+
+top_artists_by_state = get_top_artists_by_state(listen, top_n=5)
+
+# Also create a summary showing #1 artist per state
+top_artist_per_state = top_artists_by_state[top_artists_by_state['rank'] == 1][['state', 'artist', 'play_count']].reset_index(drop=True)
+
 # User engagement by subscription level
 engagement_by_level = listen.groupby('level').agg({
     'userId': 'nunique',
@@ -179,6 +217,10 @@ aggregated_data = {
         "genre_popularity": genre_popularity.to_dict('records'),
         "top_artists": top_artists.to_dict('records'),
         "top_songs": top_songs.to_dict('records'),
+        "top_songs_by_state": top_songs_by_state.to_dict('records'),
+        "top_song_per_state": top_song_per_state.to_dict('records'),
+        "top_artists_by_state": top_artists_by_state.to_dict('records'),
+        "top_artist_per_state": top_artist_per_state.to_dict('records'),
         "average_plays_per_session": float(avg_plays_per_session)
     },
     "engagement_analytics": {
@@ -186,7 +228,9 @@ aggregated_data = {
         "hourly_patterns": hourly_patterns.to_dict('records'),
         "geographic_distribution": geo_analysis.to_dict('records')
     },
-    "user_profiles": user_profiles.fillna(0).to_dict('records')
+    "user_profiles": user_profiles.fillna(0).to_dict('records'),
+    "top_songs_by_state": top_songs_by_state.fillna(0).to_dict('records'),
+    "top_song_per_state": top_song_per_state.fillna(0).to_dict('records')
 }
 
 # Save the aggregated data to JSON file
@@ -204,6 +248,10 @@ top_songs.to_csv("top_songs.csv", index=False)
 engagement_by_level.to_csv("engagement_by_level.csv", index=False)
 geo_analysis.to_csv("geographic_analysis.csv", index=False)
 hourly_patterns.to_csv("hourly_patterns.csv", index=False)
+top_songs_by_state.to_csv("top_songs_by_state.csv", index=False)
+top_song_per_state.to_csv("top_song_per_state.csv", index=False)
+top_artists_by_state.to_csv("top_artists_by_state.csv", index=False)
+top_artist_per_state.to_csv("top_artist_per_state.csv", index=False)
 
 print("✅ Data aggregation complete!")
 print(f"📊 Generated comprehensive JSON file: 'aggregated_music_data.json'")
