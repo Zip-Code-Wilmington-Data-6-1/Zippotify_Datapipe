@@ -172,3 +172,20 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# macOS
+.DS_Store
+data/.DS_Store
+
+# Data & generated artifacts
+/output/
+
+ /tmp/
+tmp_*.jsonl
+*.jsonl
+*.jsonl.gz
+*.parquet
+*.parquet.gz
+
+# Local scratch
+tmp/
