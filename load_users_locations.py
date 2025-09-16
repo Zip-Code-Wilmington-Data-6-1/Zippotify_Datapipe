@@ -1,0 +1,48 @@
+import json
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import DimUser  # Adjust import as needed
+from models import DimLocation  # Adjust import as needed
+from database import SessionLocal  # Adjust import as needed
+from datetime import datetime
+
+def load_users_and_locations(jsonl_path):
+    session = SessionLocal()
+    seen_users = set()
+    seen_locations = {}
+
+    with open(jsonl_path, "r") as f:
+        for line in f:
+            event = json.loads(line)
+            # --- USERS ---
+            user_id = event.get("userId")
+            if user_id and user_id not in seen_users:
+                user = DimUser(
+                    user_id=user_id,
+                    first_name=event.get("firstName"),
+                    last_name=event.get("lastName"),
+                    gender=event.get("gender"),
+                    registration_ts=datetime.utcfromtimestamp(event["registration"]/1000) if event.get("registration") else None,
+                    birthday=event.get("birth")  # If available
+                )
+                session.merge(user)
+                seen_users.add(user_id)
+
+            # --- LOCATIONS ---
+            loc_key = (event.get("city"), event.get("state"), event.get("lat"), event.get("lon"))
+            if all(loc_key) and loc_key not in seen_locations:
+                location = DimLocation(
+                    location_id=None,  # Let DB autoincrement if SERIAL
+                    city=event.get("city"),
+                    state=event.get("state"),
+                    latitude=event.get("lat"),
+                    longitude=event.get("lon")
+                )
+                session.add(location)
+                seen_locations[loc_key] = location
+
+    session.commit()
+    session.close()
+
+if __name__ == "__main__":
+    load_users_and_locations("data/sample/listen_events_head.jsonl")
