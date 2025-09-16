@@ -9,8 +9,6 @@ def load_users_and_locations(jsonl_path):
     session = SessionLocal()
     seen_users = set()
     seen_locations = {}
-    seen_artists = set()
-    seen_songs = set()
 
     with open(jsonl_path, "r") as f:
         for line in f:
@@ -24,7 +22,8 @@ def load_users_and_locations(jsonl_path):
                     last_name=event.get("lastName"),
                     gender=event.get("gender"),
                     registration_ts=datetime.utcfromtimestamp(event["registration"]/1000) if event.get("registration") else None,
-                    birthday=event.get("birth")
+                    birthday=event.get("birth"),
+                    level=event.get("level")
                 )
                 session.merge(user)
                 seen_users.add(user_id)
@@ -42,22 +41,21 @@ def load_users_and_locations(jsonl_path):
                 session.add(location)
                 seen_locations[loc_key] = location
 
-
     session.commit()
     session.close()
 
 def load_artists(jsonl_path):
     session = SessionLocal()
-    seen_artists = set()
+    seen_artists = set(
+        name for (name,) in session.query(DimArtist.artist_name).all()
+    )
 
     with open(jsonl_path, "r") as f:
         for line in f:
             event = json.loads(line)
             artist_name = event.get("artist")
             if artist_name and artist_name not in seen_artists:
-                artist = DimArtist(
-                    artist_name=artist_name
-                )
+                artist = DimArtist(artist_name=artist_name)
                 session.add(artist)
                 seen_artists.add(artist_name)
 

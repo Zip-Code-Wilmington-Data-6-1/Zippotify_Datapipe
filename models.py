@@ -9,6 +9,7 @@ class DimUser(Base):
     gender = Column(String(10))
     registration_ts = Column(TIMESTAMP)
     birthday = Column(BigInteger)
+    level = Column(String(20))  # <-- Add this line
 
 class DimLocation(Base):
     __tablename__ = "dim_location"
