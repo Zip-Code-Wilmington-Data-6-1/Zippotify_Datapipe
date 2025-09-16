@@ -17,3 +17,10 @@ class DimLocation(Base):
     state = Column(String(50))
     latitude = Column(DECIMAL(9, 6))
     longitude = Column(DECIMAL(9, 6))
+
+class DimArtist(Base):
+    __tablename__ = "dim_artist"
+    artist_id = Column(Integer, primary_key=True, autoincrement=True)
+    artist_name = Column(String(255), unique=True)
+
+
