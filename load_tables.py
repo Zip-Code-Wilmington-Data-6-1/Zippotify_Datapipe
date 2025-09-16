@@ -1,15 +1,16 @@
 import json
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import DimUser  # Adjust import as needed
-from models import DimLocation  # Adjust import as needed
-from database import SessionLocal  # Adjust import as needed
+from models import DimUser, DimLocation, DimArtist  # Add DimArtist, DimSong
+from database import SessionLocal
 from datetime import datetime
 
 def load_users_and_locations(jsonl_path):
     session = SessionLocal()
     seen_users = set()
     seen_locations = {}
+    seen_artists = set()
+    seen_songs = set()
 
     with open(jsonl_path, "r") as f:
         for line in f:
@@ -23,7 +24,7 @@ def load_users_and_locations(jsonl_path):
                     last_name=event.get("lastName"),
                     gender=event.get("gender"),
                     registration_ts=datetime.utcfromtimestamp(event["registration"]/1000) if event.get("registration") else None,
-                    birthday=event.get("birth")  # If available
+                    birthday=event.get("birth")
                 )
                 session.merge(user)
                 seen_users.add(user_id)
@@ -32,7 +33,7 @@ def load_users_and_locations(jsonl_path):
             loc_key = (event.get("city"), event.get("state"), event.get("lat"), event.get("lon"))
             if all(loc_key) and loc_key not in seen_locations:
                 location = DimLocation(
-                    location_id=None,  # Let DB autoincrement if SERIAL
+                    location_id=None,
                     city=event.get("city"),
                     state=event.get("state"),
                     latitude=event.get("lat"),
@@ -41,8 +42,28 @@ def load_users_and_locations(jsonl_path):
                 session.add(location)
                 seen_locations[loc_key] = location
 
+
+    session.commit()
+    session.close()
+
+def load_artists(jsonl_path):
+    session = SessionLocal()
+    seen_artists = set()
+
+    with open(jsonl_path, "r") as f:
+        for line in f:
+            event = json.loads(line)
+            artist_name = event.get("artist")
+            if artist_name and artist_name not in seen_artists:
+                artist = DimArtist(
+                    artist_name=artist_name
+                )
+                session.add(artist)
+                seen_artists.add(artist_name)
+
     session.commit()
     session.close()
 
 if __name__ == "__main__":
     load_users_and_locations("data/sample/listen_events_head.jsonl")
+    load_artists("data/sample/listen_events_head.jsonl")

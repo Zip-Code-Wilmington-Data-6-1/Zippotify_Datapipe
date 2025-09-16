@@ -14,12 +14,15 @@ IF NOT EXISTS dim_user
 );
 
 -- Artist Dimension
+DROP TABLE IF EXISTS dim_artist
+CASCADE;
+
 CREATE TABLE
 IF NOT EXISTS dim_artist
 (
-    artist_id INT PRIMARY KEY,
+    artist_id SERIAL PRIMARY KEY,
     artist_name VARCHAR
-(255)
+(255) UNIQUE
 );
 
 -- Genre Dimension
