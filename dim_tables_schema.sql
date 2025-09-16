@@ -4,7 +4,7 @@ CREATE TABLE dim_user
     user_id INT PRIMARY KEY,
     gender VARCHAR(10),
     registration_ts TIMESTAMP,
-    birthday BIGINT
+    birthday BIGINT,
     -- Optionally: age_bucket VARCHAR(20), subscription_history JSON
 );
 
@@ -21,8 +21,45 @@ CREATE TABLE dim_song
     song_id INT PRIMARY KEY,
     song_title VARCHAR(255),
     artist_id INT,
-    genre VARCHAR(100),
-    FOREIGN KEY (artist_id) REFERENCES dim_artist(artist_id)
+    genre_id INT,
+    FOREIGN KEY (artist_id) REFERENCES dim_artist(artist_id),
+    FOREIGN KEY (genre_id) REFERENCES dim_genre(genre_id)
+);
+
+CREATE TABLE
+IF NOT EXISTS dim_song_genre
+(
+    song_id INT,
+    genre_id INT,
+    PRIMARY KEY
+(song_id, genre_id),
+    FOREIGN KEY
+(song_id) REFERENCES dim_song
+(song_id),
+    FOREIGN KEY
+(genre_id) REFERENCES dim_genre
+(genre_id)
+);
+
+CREATE TABLE
+IF NOT EXISTS dim_song_artist
+(
+    song_id INT,
+    artist_id INT,
+    PRIMARY KEY
+(song_id, artist_id),
+    FOREIGN KEY
+(song_id) REFERENCES dim_song
+(song_id),
+    FOREIGN KEY
+(artist_id) REFERENCES dim_artist
+(artist_id)
+);
+
+CREATE TABLE dim_genre
+(
+    genre_id SERIAL PRIMARY KEY,
+    genre_name VARCHAR(100) UNIQUE
 );
 
 -- Location Dimension (optional)
@@ -64,18 +101,4 @@ CREATE TABLE fact_plays
     FOREIGN KEY (artist_id) REFERENCES dim_artist(artist_id),
     FOREIGN KEY (location_id) REFERENCES dim_location(location_id),
     FOREIGN KEY (time_key) REFERENCES dim_time(time_key)
-);
--- Add a birthday column to dim_user
-ALTER TABLE dim_user ADD COLUMN birthday BIGINT;
-
--- Update with a random birthday between 1940-01-01 and 2010-12-31
-UPDATE dim_user
-SET birthday = FLOOR(
-    EXTRACT(EPOCH FROM TIMESTAMP
-'1940-01-01 00:00:00') +
-    RANDOM
-() *
-(EXTRACT
-(EPOCH FROM TIMESTAMP '2010-12-31 23:59:59') - EXTRACT
-(EPOCH FROM TIMESTAMP '1940-01-01 00:00:00'))
 );
