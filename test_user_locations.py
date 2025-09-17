@@ -17,12 +17,3 @@ for user, locations in user_locations.items():
         print(f"User {user} has multiple locations: {locations}")
     #else:
     #    print(f"User {user} has a single location: {locations}")
-
-levels = set()
-with open('data/sample/events_small_combined.jsonl', 'r') as f:
-    for line in f:
-        event = json.loads(line)
-        if 'level' in event:
-            levels.add(event['level'])
-
-print(levels)

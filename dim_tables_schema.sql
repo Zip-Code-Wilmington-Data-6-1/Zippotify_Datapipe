@@ -1,7 +1,4 @@
 -- User Dimension
-DROP TABLE IF EXISTS dim_user
-CASCADE;
-
 CREATE TABLE
 IF NOT EXISTS dim_user
 (
@@ -13,9 +10,7 @@ IF NOT EXISTS dim_user
     gender VARCHAR
 (10),
     registration_ts TIMESTAMP,
-    birthday BIGINT,
-    level VARCHAR
-(20)
+    birthday BIGINT
 );
 
 -- Artist Dimension
