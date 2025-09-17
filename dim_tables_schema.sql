@@ -70,10 +70,8 @@ CREATE TABLE
 -- use MusicBrainz MBIDs (MusicBrainz Identifiers), which are UUID strings (like f27ec8db-af05-4f36-916e-3d57f91ecf5e)
 IF NOT EXISTS dim_song_artist
 (
-    song_id VARCHAR
-(36) NOT NULL,
-    artist_id VARCHAR
-(36) NOT NULL,
+    song_id INT NOT NULL,
+    artist_id INT NOT NULL,
     PRIMARY KEY
 (song_id, artist_id),
     FOREIGN KEY

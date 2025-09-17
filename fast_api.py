@@ -1,40 +1,41 @@
 # filepath: Zippotify_Datapipe/api.py
-from fastapi import FastAPI, Depends
-from typing import List
+from fastapi import FastAPI, Depends, HTTPException
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import DimArtist, DimLocation, DimUser
 from pydantic import BaseModel
+from datetime import datetime
 
 app = FastAPI()
 
 class User(BaseModel):
     user_id: int
-    gender: str
-    registration_ts: int  # You may want to use datetime here
-    birthday: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    gender: Optional[str] = None
+    registration_ts: Optional[datetime] = None  # Changed from int to datetime
+    birthday: Optional[int] = None              # Made optional since it can be None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode for Pydantic v2
 
 class Artist(BaseModel):
     artist_id: int
     artist_name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class location(BaseModel):
+class Location(BaseModel):  # Capitalized class name following convention
     location_id: int
-    city: str
-    state: str
-    latitude: float
-    longitude: float
+    city: Optional[str] = None
+    state: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
-        orm_mode = True
-
-
+        from_attributes = True
 
 def get_db():
     db = SessionLocal()
@@ -50,10 +51,9 @@ def get_users(db: Session = Depends(get_db)):
 @app.get("/users/{user_id}", response_model=User)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(DimUser).filter(DimUser.user_id == user_id).first()
-    if user:
-        return user
-    else:
-        return {}
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 @app.get("/artists", response_model=List[Artist])
 def get_artists(db: Session = Depends(get_db)):
@@ -62,20 +62,17 @@ def get_artists(db: Session = Depends(get_db)):
 @app.get("/artists/{artist_id}", response_model=Artist)
 def get_artist(artist_id: int, db: Session = Depends(get_db)):
     artist = db.query(DimArtist).filter(DimArtist.artist_id == artist_id).first()
-    if artist:
-        return artist
-    else:
-        return {}  
+    if not artist:
+        raise HTTPException(status_code=404, detail="Artist not found")
+    return artist
 
-@app.get("/locations", response_model=List[location])
+@app.get("/locations", response_model=List[Location])
 def get_locations(db: Session = Depends(get_db)):
     return db.query(DimLocation).all()
 
-
-@app.get("/locations/{location_id}", response_model=location)
+@app.get("/locations/{location_id}", response_model=Location)
 def get_location(location_id: int, db: Session = Depends(get_db)):
     location = db.query(DimLocation).filter(DimLocation.location_id == location_id).first()
-    if location:
-        return location
-    else:
-        return {}
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return location
