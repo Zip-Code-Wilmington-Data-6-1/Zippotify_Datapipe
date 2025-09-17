@@ -1,7 +1,7 @@
 import json
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import DimSong, DimUser, DimLocation, DimArtist  # Add DimArtist, DimSong
+from models import DimSong, DimUser, DimLocation, DimArtist, DimSongArtist
 from database import SessionLocal
 from datetime import datetime, timezone
 
@@ -78,7 +78,67 @@ def load_songs(jsonl_path):
     session.commit()
     session.close()
 
+def load_song_artist_relationships(jsonl_path):
+    session = SessionLocal()
+    
+    with open(jsonl_path, "r") as f:
+        for line in f:
+            event = json.loads(line)
+            song_title = event.get("song")
+            artist_name = event.get("artist")
+            
+            if song_title and artist_name:
+                # Get song_id
+                song = session.query(DimSong).filter_by(song_title=song_title).first()
+                if not song:
+                    continue
+                
+                # Handle multiple artists (split by common separators)
+                artist_names = []
+                if ' & ' in artist_name:
+                    artist_names = [name.strip() for name in artist_name.split(' & ')]
+                elif ' / ' in artist_name:
+                    artist_names = [name.strip() for name in artist_name.split(' / ')]
+                elif ' feat. ' in artist_name:
+                    parts = artist_name.split(' feat. ')
+                    artist_names = [parts[0].strip(), parts[1].strip()]
+                elif ' featuring ' in artist_name:
+                    parts = artist_name.split(' featuring ')
+                    artist_names = [parts[0].strip(), parts[1].strip()]
+                elif ' ft. ' in artist_name:
+                    parts = artist_name.split(' ft. ')
+                    artist_names = [parts[0].strip(), parts[1].strip()]
+                elif ' with ' in artist_name:
+                    parts = artist_name.split(' with ')
+                    artist_names = [parts[0].strip(), parts[1].strip()]
+                elif ' duet with ' in artist_name.lower():
+                    parts = artist_name.lower().split(' duet with ')
+                    artist_names = [parts[0].strip().title(), parts[1].strip().title()]
+                else:
+                    artist_names = [artist_name.strip()]
+                
+                # Insert relationships for each artist
+                for single_artist_name in artist_names:
+                    artist = session.query(DimArtist).filter_by(artist_name=single_artist_name).first()
+                    if artist:
+                        # Check if relationship already exists
+                        existing = session.query(DimSongArtist).filter_by(
+                            song_id=song.song_id, 
+                            artist_id=artist.artist_id
+                        ).first()
+                        
+                        if not existing:
+                            song_artist = DimSongArtist(
+                                song_id=song.song_id,
+                                artist_id=artist.artist_id
+                            )
+                            session.add(song_artist)
+    
+    session.commit()
+    session.close()
+
 if __name__ == "__main__":
     load_users_and_locations("data/sample/listen_events_head.jsonl")
     load_artists("data/sample/listen_events_head.jsonl")
     load_songs("data/sample/listen_events_head.jsonl")
+    load_song_artist_relationships("data/sample/listen_events_head.jsonl")

@@ -25,5 +25,10 @@ class DimArtist(Base):
 
 class DimSong(Base):
     __tablename__ = "dim_song"
-    song_id = Column(Integer, primary_key=True, autoincrement=True)  # Add autoincrement=True
+    song_id = Column(Integer, primary_key=True, autoincrement=True)
     song_title = Column(String(255))
+
+class DimSongArtist(Base):
+    __tablename__ = "dim_song_artist"
+    song_id = Column(Integer, primary_key=True)
+    artist_id = Column(Integer, primary_key=True)
