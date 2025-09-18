@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, BigInteger, TIMESTAMP, DECIMAL
+from sqlalchemy import Column, Integer, String, BigInteger, TIMESTAMP, DECIMAL, ForeignKey
+from sqlalchemy.orm import relationship
 from database import Base
 
 class DimUser(Base):
@@ -22,13 +23,32 @@ class DimArtist(Base):
     __tablename__ = "dim_artist"
     artist_id = Column(Integer, primary_key=True, autoincrement=True)
     artist_name = Column(String(255), unique=True)
+    songs = relationship("DimSongArtist", back_populates="artist")
 
 class DimSong(Base):
     __tablename__ = "dim_song"
     song_id = Column(Integer, primary_key=True, autoincrement=True)
     song_title = Column(String(255))
+    genres = relationship("DimSongGenre", back_populates="song")
+    artists = relationship("DimSongArtist", back_populates="song")
 
 class DimSongArtist(Base):
     __tablename__ = "dim_song_artist"
-    song_id = Column(Integer, primary_key=True)
-    artist_id = Column(Integer, primary_key=True)
+    song_id = Column(Integer, ForeignKey("dim_song.song_id"), primary_key=True)
+    artist_id = Column(Integer, ForeignKey("dim_artist.artist_id"), primary_key=True)
+    song = relationship("DimSong", back_populates="artists")
+    artist = relationship("DimArtist", back_populates="songs")
+
+class DimGenre(Base):
+    __tablename__ = "dim_genre"
+    genre_id = Column(Integer, primary_key=True, autoincrement=True)
+    genre_name = Column(String(255), unique=True, nullable=False)
+    songs = relationship("DimSongGenre", back_populates="genre")
+
+class DimSongGenre(Base):
+    __tablename__ = "dim_song_genre"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    song_id = Column(Integer, ForeignKey("dim_song.song_id"), nullable=False)
+    genre_id = Column(Integer, ForeignKey("dim_genre.genre_id"), nullable=False)
+    song = relationship("DimSong", back_populates="genres")
+    genre = relationship("DimGenre", back_populates="songs")
