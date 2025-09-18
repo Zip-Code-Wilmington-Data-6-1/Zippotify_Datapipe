@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, BigInteger, TIMESTAMP, DECIMAL, ForeignKey
+from sqlalchemy import Column, Integer, String, BigInteger, TIMESTAMP, DECIMAL, ForeignKey, DateTime, Date
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -51,3 +51,24 @@ class DimSongGenre(Base):
     genre_id = Column(Integer, ForeignKey("dim_genre.genre_id"), primary_key=True)
     song = relationship("DimSong", back_populates="genres")
     genre = relationship("DimGenre", back_populates="songs")
+
+class DimTime(Base):
+    __tablename__ = "dim_time"
+    time_key = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Date)
+    hour = Column(Integer)
+    weekday = Column(String(10))
+    month = Column(Integer)
+    year = Column(Integer)
+
+class FactPlays(Base):
+    __tablename__ = "fact_plays"
+    play_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("dim_user.user_id"))
+    song_id = Column(Integer, ForeignKey("dim_song.song_id"))
+    artist_id = Column(Integer, ForeignKey("dim_artist.artist_id"))
+    location_id = Column(Integer, ForeignKey("dim_location.location_id"))
+    time_key = Column(Integer, ForeignKey("dim_time.time_key"))
+    duration_ms = Column(Integer)
+    session_id = Column(String(100))
+    user_level = Column(String(20))

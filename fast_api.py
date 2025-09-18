@@ -3,9 +3,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import DimArtist, DimLocation, DimUser, DimSong, DimGenre, DimSongGenre
+from models import DimArtist, DimLocation, DimUser, DimSong, DimGenre, DimSongGenre, DimTime, FactPlays
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 
 app = FastAPI()
 
@@ -54,6 +54,31 @@ class Genre(BaseModel):
 class SongGenre(BaseModel):
     song_id: int
     genre_id: int
+
+    class Config:
+        from_attributes = True
+
+class Time(BaseModel):
+    time_key: int
+    date: date
+    hour: int
+    weekday: str
+    month: int
+    year: int
+
+    class Config:
+        from_attributes = True
+
+class FactPlay(BaseModel):
+    play_id: int
+    user_id: int
+    song_id: int
+    artist_id: int
+    location_id: int
+    time_key: int
+    duration_ms: Optional[int] = None
+    session_id: Optional[str] = None
+    user_level: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -129,3 +154,11 @@ def get_genres_for_song(song_id: int, db: Session = Depends(get_db)):
     song_genres = db.query(DimSongGenre).filter(DimSongGenre.song_id == song_id).all()
     genre_ids = [sg.genre_id for sg in song_genres]
     return db.query(DimGenre).filter(DimGenre.genre_id.in_(genre_ids)).all()
+
+@app.get("/times", response_model=List[Time])
+def get_times(db: Session = Depends(get_db)):
+    return db.query(DimTime).all()
+
+@app.get("/fact_plays", response_model=List[FactPlay])
+def get_fact_plays(db: Session = Depends(get_db)):
+    return db.query(FactPlays).all()
