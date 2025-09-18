@@ -47,8 +47,7 @@ class DimGenre(Base):
 
 class DimSongGenre(Base):
     __tablename__ = "dim_song_genre"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    song_id = Column(Integer, ForeignKey("dim_song.song_id"), nullable=False)
-    genre_id = Column(Integer, ForeignKey("dim_genre.genre_id"), nullable=False)
+    song_id = Column(Integer, ForeignKey("dim_song.song_id"), primary_key=True)
+    genre_id = Column(Integer, ForeignKey("dim_genre.genre_id"), primary_key=True)
     song = relationship("DimSong", back_populates="genres")
     genre = relationship("DimGenre", back_populates="songs")
