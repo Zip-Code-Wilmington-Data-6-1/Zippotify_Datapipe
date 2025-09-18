@@ -102,10 +102,12 @@ IF NOT EXISTS dim_location
 );
 
 -- Time Dimension
+DROP TABLE IF EXISTS dim_time
+CASCADE;
 CREATE TABLE
 IF NOT EXISTS dim_time
 (
-    time_key INT PRIMARY KEY,
+    time_key SERIAL PRIMARY KEY,
     date DATE,
     hour INT,
     weekday VARCHAR
