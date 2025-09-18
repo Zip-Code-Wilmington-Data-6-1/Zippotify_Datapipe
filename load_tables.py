@@ -196,15 +196,15 @@ if __name__ == "__main__":
     
     # Load data in the correct order
     print("Loading users and locations...")
-    load_users_and_locations("data/sample/listen_events_head.jsonl")
+    load_users_and_locations("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
     
     print("Loading artists...")
-    load_artists("data/sample/listen_events_head.jsonl")
+    load_artists("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
     
     print("Loading songs...")
-    load_songs("data/sample/listen_events_head.jsonl")
+    load_songs("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
     
     print("Loading song-artist relationships...")
-    load_song_artist_relationships("data/sample/listen_events_head.jsonl")
-    
+    load_song_artist_relationships("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
+
     print("Data loading complete!")
