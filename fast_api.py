@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import DimArtist, DimLocation, DimUser
+from models import DimArtist, DimLocation, DimUser, DimSong, DimGenre, DimSongGenre
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -33,6 +33,27 @@ class Location(BaseModel):  # Capitalized class name following convention
     state: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+class Song(BaseModel):
+    song_id: int
+    song_title: str
+
+    class Config:
+        from_attributes = True
+
+class Genre(BaseModel):
+    genre_id: int
+    genre_name: str
+
+    class Config:
+        from_attributes = True
+
+class SongGenre(BaseModel):
+    song_id: int
+    genre_id: int
 
     class Config:
         from_attributes = True
@@ -76,3 +97,35 @@ def get_location(location_id: int, db: Session = Depends(get_db)):
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
     return location
+
+@app.get("/songs", response_model=List[Song])
+def get_songs(db: Session = Depends(get_db)):
+    return db.query(DimSong).all()
+
+@app.get("/songs/{song_id}", response_model=Song)
+def get_song(song_id: int, db: Session = Depends(get_db)):
+    song = db.query(DimSong).filter(DimSong.song_id == song_id).first()
+    if not song:
+        raise HTTPException(status_code=404, detail="Song not found")
+    return song
+
+@app.get("/genres", response_model=List[Genre])
+def get_genres(db: Session = Depends(get_db)):
+    return db.query(DimGenre).all()
+
+@app.get("/genres/{genre_id}", response_model=Genre)
+def get_genre(genre_id: int, db: Session = Depends(get_db)):
+    genre = db.query(DimGenre).filter(DimGenre.genre_id == genre_id).first()
+    if not genre:
+        raise HTTPException(status_code=404, detail="Genre not found")
+    return genre
+
+@app.get("/song_genres", response_model=List[SongGenre])
+def get_song_genres(db: Session = Depends(get_db)):
+    return db.query(DimSongGenre).all()
+
+@app.get("/song_genres/{song_id}", response_model=List[Genre])
+def get_genres_for_song(song_id: int, db: Session = Depends(get_db)):
+    song_genres = db.query(DimSongGenre).filter(DimSongGenre.song_id == song_id).all()
+    genre_ids = [sg.genre_id for sg in song_genres]
+    return db.query(DimGenre).filter(DimGenre.genre_id.in_(genre_ids)).all()
