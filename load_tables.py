@@ -53,12 +53,14 @@ def load_artists(jsonl_path):
         for line in f:
             event = json.loads(line)
             artist_name = event.get("artist")
-            if artist_name and artist_name not in seen_artists:
-                artist = DimArtist(
-                    artist_name=artist_name
-                )
-                session.add(artist)
-                seen_artists.add(artist_name)
+            if artist_name:
+                for single_artist in split_artists(artist_name):
+                    if single_artist and single_artist not in seen_artists:
+                        artist = DimArtist(
+                            artist_name=single_artist
+                        )
+                        session.add(artist)
+                        seen_artists.add(single_artist)
 
     session.commit()
     session.close()
@@ -102,7 +104,7 @@ def split_artists(artist_name):
     """Split artist names while respecting known duos/groups"""
     if is_known_duo_or_group(artist_name):
         return [artist_name.strip()]
-    
+
     # Handle parenthetical collaborations like "3T (Duet with Michael Jackson)"
     if " (duet with " in artist_name.lower() and ")" in artist_name:
         duet_start = artist_name.lower().find(" (duet with ")
@@ -111,26 +113,24 @@ def split_artists(artist_name):
             first_artist = artist_name[:duet_start].strip()
             second_artist = artist_name[duet_start + 12:duet_end].strip()  # 12 = len(" (duet with ")
             return [first_artist, second_artist]
-    
-    # Handle other separators
+
+    # List of separators to split on (order matters)
     separators = [
-        (' / ', ' / '),
-        (' duet with ', ' duet with '),
-        (' feat. ', ' feat. '),
-        (' featuring ', ' featuring '),
-        (' ft. ', ' ft. '),
-        (' with ', ' with '),
-        (' & ', ' & ')  # This should be last to handle known duos first
+        ' / ',
+        ' duet with ',
+        ' feat. ',
+        ' featuring ',
+        ' ft. ',
+        ' with ',
+        ' & ',  # This should be last to handle known duos first
     ]
-    
-    for separator_lower, separator_original in separators:
-        if separator_lower in artist_name.lower():
-            pos = artist_name.lower().find(separator_lower)
-            first_artist = artist_name[:pos].strip()
-            second_artist = artist_name[pos + len(separator_lower):].strip()
-            return [first_artist, second_artist]
-    
-    return [artist_name.strip()]
+
+    # Split using all separators
+    import re
+    pattern = '|'.join(map(re.escape, separators))
+    split_names = [name.strip() for name in re.split(pattern, artist_name) if name.strip()]
+
+    return split_names if split_names else [artist_name.strip()]
 
 def load_song_artist_relationships(jsonl_path):
     session = SessionLocal()
@@ -274,17 +274,17 @@ if __name__ == "__main__":
     
     # Load data in the correct order
     print("Loading users and locations...")
-    load_users_and_locations("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
+    load_users_and_locations("data/sample/listen_events_head.jsonl")
     
     print("Loading artists...")
-    load_artists("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
+    load_artists("data/sample/listen_events_head.jsonl")
     
     print("Loading songs...")
-    load_songs("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
-    
+    load_songs("data/sample/listen_events_head.jsonl")
+
     print("Loading song-artist relationships...")
-    load_song_artist_relationships("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
+    load_song_artist_relationships("data/sample/listen_events_head.jsonl")
 
     print("Loading fact plays and time dimension...")
-    load_fact_plays("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
+    load_fact_plays("data/sample/listen_events_head.jsonl")
     print("FactPlays and DimTime loaded!")
