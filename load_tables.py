@@ -1,7 +1,7 @@
 import json
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
-from models import DimSong, DimUser, DimLocation, DimArtist, DimSongArtist
+from models import DimSong, DimUser, DimLocation, DimArtist, DimSongArtist, DimTime, FactPlays
 from database import SessionLocal
 from datetime import datetime, timezone
 
@@ -237,6 +237,84 @@ def load_song_artist_relationships(jsonl_paths):
     
     print(f"Added {relationships_added} song-artist relationships")
     print(f"Skipped {relationships_skipped} existing relationships")
+    session.commit()
+    session.close()
+
+def get_or_create_time(session, dt):
+    date = dt.date()
+    hour = dt.hour
+    weekday = dt.strftime('%A')
+    month = dt.month
+    year = dt.year
+
+    existing = session.query(DimTime).filter_by(
+        date=date,
+        hour=hour,
+        weekday=weekday,
+        month=month,
+        year=year
+    ).first()
+    if existing:
+        return existing
+
+    dim_time = DimTime(
+        date=date,
+        hour=hour,
+        weekday=weekday,
+        month=month,
+        year=year
+    )
+    session.add(dim_time)
+    session.commit()
+    return dim_time
+
+def load_fact_plays(jsonl_path):
+    session = SessionLocal()
+    # Preload dimension tables for fast lookup
+    users = {u.user_id: u for u in session.query(DimUser).all()}
+    songs = {s.song_title: s for s in session.query(DimSong).all()}
+    artists = {a.artist_name: a for a in session.query(DimArtist).all()}
+    locations = {(l.city, l.state, float(l.latitude), float(l.longitude)): l for l in session.query(DimLocation).all()}
+    times = {}  # cache for datetime to time_key
+
+    with open(jsonl_path, "r") as f:
+        for line in f:
+            event = json.loads(line)
+            user_id = event.get("userId")
+            song_title = event.get("song")
+            artist_name = event.get("artist")
+            city, state, lat, lon = event.get("city"), event.get("state"), event.get("lat"), event.get("lon")
+            ts = event.get("ts") or event.get("timestamp") or event.get("play_ts") or event.get("registration")
+            if not (user_id and song_title and artist_name and city and state and lat and lon and ts):
+                continue
+
+            # Convert timestamp to datetime
+            dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+            # Get or create DimTime
+            if dt not in times:
+                dim_time = get_or_create_time(session, dt)
+                times[dt] = dim_time
+            else:
+                dim_time = times[dt]
+
+            # Get dimension IDs
+            user = users.get(user_id)
+            song = songs.get(song_title)
+            artist = artists.get(artist_name)
+            location = locations.get((city, state, float(lat), float(lon)))
+
+            if not (user and song and artist and location and dim_time):
+                continue
+
+            fact_play = FactPlays(
+                user_id=user.user_id,
+                song_id=song.song_id,
+                artist_id=artist.artist_id,
+                location_id=location.location_id,
+                time_key=dim_time.time_key
+            )
+            session.add(fact_play)
+
     session.commit()
     session.close()
 
