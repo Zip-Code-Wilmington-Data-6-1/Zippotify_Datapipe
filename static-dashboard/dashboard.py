@@ -10,6 +10,7 @@ from folium import plugins
 from streamlit_folium import st_folium
 import time
 import random
+from ai_bot import DataInsightBot
 
 # --- CONFIG ---
 st.set_page_config(
@@ -1048,6 +1049,105 @@ elif selected_analysis == "📊 Engagement Metrics":
     most_active_row = daily_df[daily_df['daily_active_users'] == max_users].iloc[0]
     with col3:
         st.metric("Most Active Day", most_active_row['date'].strftime('%m/%d'), f"{int(most_active_row['daily_active_users']):,} users")
+
+# --- AI INSIGHTS BOT ---
+st.divider()
+st.subheader("🤖 AI Music Insights Assistant")
+st.markdown("*Ask questions about your data or get instant insights!*")
+
+# Initialize bot and chat history
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'bot' not in st.session_state:
+    st.session_state.bot = DataInsightBot()
+
+# Create data context for AI
+data_context = {
+    'top_artists': csv_data['top_artists'],
+    'top_songs': csv_data['top_songs'],
+    'genre_popularity': csv_data['genre_popularity'],
+    'geographic_analysis': csv_data['geographic_analysis'],
+    'hourly_patterns': csv_data['hourly_patterns'],
+    'age_distribution': csv_data['age_distribution']
+}
+
+# AI Chat Interface
+col1, col2, col3 = st.columns([3, 1, 1])
+
+with col1:
+    user_input = st.text_input("💬 Ask about your music data:", 
+                             placeholder="e.g., What trends do you see in the current data?",
+                             key="user_question")
+
+with col2:
+    if st.button("🎯 Ask AI", type="primary"):
+        if user_input:
+            with st.spinner("🤖 Analyzing your data..."):
+                response = st.session_state.bot.answer_question(user_input, data_context)
+                st.session_state.chat_history.append(("user", user_input))
+                st.session_state.chat_history.append(("bot", response))
+                st.rerun()
+
+with col3:
+    if st.button("🔄 Random Insight"):
+        with st.spinner("🤖 Finding insights..."):
+            response = st.session_state.bot.get_random_insight(data_context)
+            st.session_state.chat_history.append(("user", "Give me a random insight"))
+            st.session_state.chat_history.append(("bot", response))
+            st.rerun()
+
+# Display chat history in a nice format
+if st.session_state.chat_history:
+    st.markdown("### 💬 Conversation")
+    
+    # Show last 6 messages (3 exchanges)
+    recent_messages = st.session_state.chat_history[-6:]
+    
+    for i, (sender, message) in enumerate(recent_messages):
+        if sender == "user":
+            st.markdown(f"""
+            <div style="background-color: #0e1117; padding: 10px; border-radius: 10px; margin: 5px 0; border-left: 3px solid #1f77b4;">
+                <strong>🧑‍💻 You:</strong> {message}
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="background-color: #262730; padding: 10px; border-radius: 10px; margin: 5px 0; border-left: 3px solid #ff7f0e;">
+                <strong>🤖 AI Assistant:</strong><br>{message}
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Clear chat button
+    if st.button("🗑️ Clear Chat"):
+        st.session_state.chat_history = []
+        st.rerun()
+
+# Suggested questions in a grid
+st.markdown("### 💡 Suggested Questions")
+suggested_questions = st.session_state.bot.get_suggested_questions()
+
+# Create a 2x4 grid for suggested questions
+cols = st.columns(2)
+for i, question in enumerate(suggested_questions):
+    col = cols[i % 2]
+    with col:
+        if st.button(question, key=f"suggest_{i}", help="Click to ask this question"):
+            with st.spinner("🤖 Analyzing..."):
+                response = st.session_state.bot.answer_question(question, data_context)
+                st.session_state.chat_history.append(("user", question))
+                st.session_state.chat_history.append(("bot", response))
+                st.rerun()
+
+# Auto-generated insights on page load
+if not st.session_state.chat_history:
+    st.markdown("### 🚀 Quick Insights")
+    st.info("👋 Welcome! I'm your AI music data assistant. Here are some quick insights to get you started:")
+    
+    insights = st.session_state.bot.generate_smart_insights(data_context)
+    for insight in insights[:3]:
+        st.markdown(f"• {insight}")
+    
+    st.markdown("*Ask me anything about your music data above!*")
 
 # --- FOOTER ---
 st.divider()
