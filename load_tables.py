@@ -232,6 +232,9 @@ def load_fact_plays(jsonl_path):
             artist_name = event.get("artist")
             city, state, lat, lon = event.get("city"), event.get("state"), event.get("lat"), event.get("lon")
             ts = event.get("ts") or event.get("timestamp") or event.get("play_ts") or event.get("registration")
+            duration_ms = event.get("duration_ms")
+            session_id = event.get("session_id")
+            user_level = event.get("level")
             if not (user_id and song_title and artist_name and city and state and lat and lon and ts):
                 continue
 
@@ -258,7 +261,10 @@ def load_fact_plays(jsonl_path):
                 song_id=song.song_id,
                 artist_id=artist.artist_id,
                 location_id=location.location_id,
-                time_key=dim_time.time_key
+                time_key=dim_time.time_key,
+                duration_ms=duration_ms,
+                session_id=session_id,
+                user_level=user_level
             )
             session.add(fact_play)
 
