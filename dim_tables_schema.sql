@@ -41,22 +41,18 @@ IF NOT EXISTS dim_song
     song_id INT PRIMARY KEY,
     song_title VARCHAR
 (255),
-    artist_id INT,
-    genre_id INT,
-    FOREIGN KEY
-(artist_id) REFERENCES dim_artist
-(artist_id),
-    FOREIGN KEY
-(genre_id) REFERENCES dim_genre
-(genre_id)
 );
 
 -- Song-Genre Bridge
+DROP TABLE IF EXISTS dim_song_genre
+CASCADE;
 CREATE TABLE
 IF NOT EXISTS dim_song_genre
 (
-    song_id INT,
-    genre_id INT,
+    song_id VARCHAR
+(36) NOT NULL,
+    genre_id VARCHAR
+(36) NOT NULL,
     PRIMARY KEY
 (song_id, genre_id),
     FOREIGN KEY
@@ -68,11 +64,14 @@ IF NOT EXISTS dim_song_genre
 );
 
 -- Song-Artist Bridge
+DROP TABLE IF EXISTS dim_song_artist
+CASCADE;
 CREATE TABLE
+-- use MusicBrainz MBIDs (MusicBrainz Identifiers), which are UUID strings (like f27ec8db-af05-4f36-916e-3d57f91ecf5e)
 IF NOT EXISTS dim_song_artist
 (
-    song_id INT,
-    artist_id INT,
+    song_id INT NOT NULL,
+    artist_id INT NOT NULL,
     PRIMARY KEY
 (song_id, artist_id),
     FOREIGN KEY
@@ -103,10 +102,12 @@ IF NOT EXISTS dim_location
 );
 
 -- Time Dimension
+DROP TABLE IF EXISTS dim_time
+CASCADE;
 CREATE TABLE
 IF NOT EXISTS dim_time
 (
-    time_key INT PRIMARY KEY,
+    time_key SERIAL PRIMARY KEY,
     date DATE,
     hour INT,
     weekday VARCHAR
