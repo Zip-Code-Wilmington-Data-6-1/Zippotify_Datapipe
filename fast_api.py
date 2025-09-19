@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from database import SessionLocal
 from models import DimArtist, DimLocation, DimUser, DimSong, DimGenre, DimSongGenre, DimTime, FactPlays
 from pydantic import BaseModel
@@ -162,3 +163,16 @@ def get_times(db: Session = Depends(get_db)):
 @app.get("/fact_plays", response_model=List[FactPlay])
 def get_fact_plays(db: Session = Depends(get_db)):
     return db.query(FactPlays).all()
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/health/db")
+def health_db():
+    try:
+        with SessionLocal() as db:
+            db.execute(text("SELECT 1"))
+        return {"db": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
