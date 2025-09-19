@@ -171,8 +171,8 @@ def health():
 @app.get("/health/db")
 def health_db():
     try:
-        with SessionLocal() as db:
-            db.execute(text("SELECT 1"))
+        with SessionLocal() as s:
+            s.execute(text("SELECT 1"))
         return {"db": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
