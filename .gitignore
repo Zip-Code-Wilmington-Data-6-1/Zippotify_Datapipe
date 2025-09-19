@@ -175,6 +175,8 @@ cython_debug/
 
 # macOS
 .DS_Store
+*/.DS_Store
+**/.DS_Store
 data/.DS_Store
 
 # Data & generated artifacts
