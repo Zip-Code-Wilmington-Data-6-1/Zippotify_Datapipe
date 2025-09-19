@@ -48,3 +48,4 @@ pydantic
 pytest
 pytest-mock
 httpx
+boto3
