@@ -65,6 +65,12 @@ def process_batch(session, songs, genre_cache):
     for song in songs:
         print(f"Processing song_id={song.song_id}: {song.song_title}")
         try:
+            # Check if this song already has any genre relationships
+            existing_links = session.query(DimSongGenre).filter_by(song_id=song.song_id).first()
+            if existing_links:
+                print(f"Skipping song_id={song.song_id} (already processed)")
+                continue
+
             results = sp.search(q=song.song_title, type='track', limit=1)
             items = results['tracks']['items']
             if not items:
@@ -80,13 +86,21 @@ def process_batch(session, songs, genre_cache):
                     _, genres = future.result()
                     song_genres.update(genres)
 
+            # Bulk fetch existing relationships for this song
+            existing_genre_ids = set(
+                gid for (gid,) in session.query(DimSongGenre.genre_id).filter_by(song_id=song.song_id).all()
+            )
+
+            new_links = []
             for genre_name in song_genres:
                 genre = get_or_create_genre(session, genre_name)
-                exists = session.query(DimSongGenre).filter_by(song_id=song.song_id, genre_id=genre.genre_id).first()
-                if not exists:
+                if genre.genre_id not in existing_genre_ids:
                     link = DimSongGenre(song_id=song.song_id, genre_id=genre.genre_id)
-                    session.add(link)
-            session.commit()
+                    new_links.append(link)
+
+            if new_links:
+                session.add_all(new_links)
+                session.commit()
             time.sleep(0.1)  # Be nice to the API
         except Exception as e:
             print(f"Error processing song_id={song.song_id}: {e}")
@@ -104,24 +118,21 @@ def process_song_chunk(offset, batch_size, total):
 
 def main():
     session = SessionLocal()
-    batch_size = 1000
+    batch_size = 2000
     total = session.query(DimSong).count()
     session.close()
 
-    num_workers = 4  # Adjust based on your CPU and API limits
+    num_workers = 8  # Use all CPU cores
 
     processes = []
     for offset in range(0, total, batch_size):
         p = Process(target=process_song_chunk, args=(offset, batch_size, total))
         p.start()
         processes.append(p)
-        # Limit the number of concurrent processes
         if len(processes) >= num_workers:
             for proc in processes:
                 proc.join()
             processes = []
-
-    # Join any remaining processes
     for proc in processes:
         proc.join()
 
