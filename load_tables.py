@@ -78,18 +78,23 @@ def load_artists(jsonl_paths):
         name for (name,) in session.query(DimArtist.artist_name).all()
     )
 
-    with open(jsonl_path, "r") as f:
-        for line in f:
-            event = json.loads(line)
-            artist_name = event.get("artist")
-            if artist_name:
-                for single_artist in split_artists(artist_name):
-                    if single_artist and single_artist not in seen_artists:
-                        artist = DimArtist(
-                            artist_name=single_artist
-                        )
-                        session.add(artist)
-                        seen_artists.add(single_artist)
+    for jsonl_path in jsonl_paths:
+        try:
+            with open(jsonl_path, "r") as f:
+                for line in f:
+                    event = json.loads(line)
+                    artist_name = event.get("artist")
+                    if artist_name:
+                        for single_artist in split_artists(artist_name):
+                            if single_artist and single_artist not in seen_artists:
+                                artist = DimArtist(
+                                    artist_name=single_artist
+                                )
+                                session.add(artist)
+                                seen_artists.add(single_artist)
+        except FileNotFoundError:
+            print(f"Warning: File {jsonl_path} not found, skipping...")
+            continue
 
     session.commit()
     session.close()
@@ -164,6 +169,10 @@ def split_artists(artist_name):
     import re
     pattern = '|'.join(map(re.escape, separators))
     split_names = [name.strip() for name in re.split(pattern, artist_name) if name.strip()]
+
+    # Truncate artist names to prevent overflow
+    max_length = 255
+    split_names = [name[:max_length] for name in split_names]
 
     return split_names if split_names else [artist_name.strip()]
 
@@ -312,44 +321,59 @@ def load_fact_plays(jsonl_path):
     session.close()
 
 if __name__ == "__main__":
-    # First create all tables
     from database import engine
     from models import Base
     Base.metadata.create_all(bind=engine)
     print("Tables created successfully!")
-    
 
-    # Define file list
     files = [
-        "data/sample/listen_events_head.jsonl",
         "output/auth_events.json",
         "output/listen_events.json",
         "output/page_view_events.json",
         "output/status_change_events.json"
     ]
-    
+
     print("\nChecking which tables need to be loaded...")
-    
-    # Check users (more complex due to combined user/location function)
+
+    # Users & Locations
     session = SessionLocal()
     user_count = session.query(func.count(DimUser.user_id)).scalar()
     location_count = session.query(func.count(DimLocation.location_id)).scalar()
     session.close()
-    
     if user_count == 0 or location_count == 0:
         print("Loading users and locations...")
         for file in files:
             load_users_and_locations(file)
     else:
         print(f"✓ Users and locations already loaded (Users: {user_count}, Locations: {location_count})")
-    
-    print("Loading artists...")
-    load_artists("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
-    
-    print("Loading songs...")
-    load_songs("Zippotify_Datapipe/data/sample/listen_events_head.jsonl")
-    
-    print("Loading song-artist relationships...")
-    load_song_artist_relationships(files)
+
+    # Artists
+    if not is_table_fully_loaded(DimArtist, files, "artist"):
+        print("Loading artists...")
+        load_artists(files)
+    else:
+        print("✓ Artists already loaded.")
+
+    # Songs
+    if not is_table_fully_loaded(DimSong, files, "song"):
+        print("Loading songs...")
+        load_songs(files)
+    else:
+        print("✓ Songs already loaded.")
+
+    # Song-Artist Relationships
+    if not is_table_fully_loaded(DimSongArtist, files, "song"):
+        print("Loading song-artist relationships...")
+        load_song_artist_relationships(files)
+    else:
+        print("✓ Song-artist relationships already loaded.")
+
+    # Fact Plays
+    if not is_table_fully_loaded(FactPlays, files, "song"):
+        print("Loading fact plays...")
+        for file in files:
+            load_fact_plays(file)
+    else:
+        print("✓ Fact plays already loaded.")
 
     print("\nData loading complete!")

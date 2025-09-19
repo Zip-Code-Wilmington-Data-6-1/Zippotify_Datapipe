@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from models import DimSong, DimGenre, DimSongGenre
 from database import SessionLocal
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Process
 
 CACHE_FILE = "artist_genre_cache.pkl"
 MAX_WORKERS = 10  # Tune this for your rate limit comfort
@@ -91,20 +92,38 @@ def process_batch(session, songs, genre_cache):
             print(f"Error processing song_id={song.song_id}: {e}")
             session.rollback()
 
-def main():
+def process_song_chunk(offset, batch_size, total):
     session = SessionLocal()
-    batch_size = 1000  # Only process 1000 songs for testing
-    offset = 0
-    total = session.query(DimSong).count()
     genre_cache = load_cache()
-
-    print(f"\nProcessing batch {offset} to {offset+batch_size} of {total} (LIMITED TO 1000 SONGS FOR TEST)")
+    print(f"\n[Process {offset//batch_size}] Processing batch {offset} to {min(offset+batch_size, total)} of {total}")
     songs = session.query(DimSong).order_by(DimSong.song_id).offset(offset).limit(batch_size).all()
     if songs:
         process_batch(session, songs, genre_cache)
         save_cache(genre_cache)
-
     session.close()
+
+def main():
+    session = SessionLocal()
+    batch_size = 1000
+    total = session.query(DimSong).count()
+    session.close()
+
+    num_workers = 4  # Adjust based on your CPU and API limits
+
+    processes = []
+    for offset in range(0, total, batch_size):
+        p = Process(target=process_song_chunk, args=(offset, batch_size, total))
+        p.start()
+        processes.append(p)
+        # Limit the number of concurrent processes
+        if len(processes) >= num_workers:
+            for proc in processes:
+                proc.join()
+            processes = []
+
+    # Join any remaining processes
+    for proc in processes:
+        proc.join()
 
 if __name__ == "__main__":
     main()
