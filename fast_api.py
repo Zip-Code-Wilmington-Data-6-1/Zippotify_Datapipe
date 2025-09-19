@@ -4,7 +4,14 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import SessionLocal
-from .database import get_db  # adjust import as needed
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        
 from models import DimArtist, DimLocation, DimUser, DimSong, DimGenre, DimSongGenre, DimTime, FactPlays
 from pydantic import BaseModel
 from datetime import datetime, date
