@@ -411,18 +411,18 @@ def load_aggregated_data():
         
         # Load individual CSV files for detailed analysis
         csv_data = {
-            'daily_active': pd.read_csv('aggregated_data/daily_active_users.csv'),
-            'age_distribution': pd.read_csv('aggregated_data/age_distribution.csv'),
-            'genre_popularity': pd.read_csv('aggregated_data/genre_popularity.csv'),
-            'top_artists': pd.read_csv('aggregated_data/top_artists.csv'),
-            'top_songs': pd.read_csv('aggregated_data/top_songs.csv'),
-            'engagement_by_level': pd.read_csv('aggregated_data/engagement_by_level.csv'),
-            'geographic_analysis': pd.read_csv('aggregated_data/geographic_analysis.csv'),
-            'hourly_patterns': pd.read_csv('aggregated_data/hourly_patterns.csv'),
-            'top_songs_by_state': pd.read_csv('aggregated_data/top_songs_by_state.csv'),
-            'top_song_per_state': pd.read_csv('aggregated_data/top_song_per_state.csv'),
-            'top_artists_by_state': pd.read_csv('aggregated_data/top_artists_by_state.csv'),
-            'top_artist_per_state': pd.read_csv('aggregated_data/top_artist_per_state.csv')
+            'daily_active': pd.read_csv('aggregated_data/daily_active_users.csv', encoding='utf-8'),
+            'age_distribution': pd.read_csv('aggregated_data/age_distribution.csv', encoding='utf-8'),
+            'genre_popularity': pd.read_csv('aggregated_data/genre_popularity.csv', encoding='utf-8'),
+            'top_artists': pd.read_csv('aggregated_data/top_artists.csv', encoding='utf-8'),
+            'top_songs': pd.read_csv('aggregated_data/top_songs.csv', encoding='utf-8'),
+            'engagement_by_level': pd.read_csv('aggregated_data/engagement_by_level.csv', encoding='utf-8'),
+            'geographic_analysis': pd.read_csv('aggregated_data/geographic_analysis.csv', encoding='utf-8'),
+            'hourly_patterns': pd.read_csv('aggregated_data/hourly_patterns.csv', encoding='utf-8'),
+            'top_songs_by_state': pd.read_csv('aggregated_data/top_songs_by_state.csv', encoding='utf-8'),
+            'top_song_per_state': pd.read_csv('aggregated_data/top_song_per_state.csv', encoding='utf-8'),
+            'top_artists_by_state': pd.read_csv('aggregated_data/top_artists_by_state.csv', encoding='utf-8'),
+            'top_artist_per_state': pd.read_csv('aggregated_data/top_artist_per_state.csv', encoding='utf-8')
         }
         
         return aggregated_data, csv_data
@@ -530,16 +530,17 @@ if selected_analysis == "🏠 Overview":
     
     with col1:
         st.subheader("🎵 Top Songs")
-        top_songs_df = pd.DataFrame(content_analytics['top_songs'][:10])
-        # Truncate long song names for better display
+        top_songs_df = csv_data['top_songs'].head(10).copy()
+        # Truncate long song names for y-axis display
         top_songs_df['song_display'] = top_songs_df['song'].apply(
-            lambda x: x if len(x) <= 35 else x[:32] + "..."
+            lambda x: x if len(x) <= 40 else x[:37] + "..."
         )
         
         fig_songs = px.bar(top_songs_df, x='play_count', y='song_display', orientation='h',
                           title='Top 10 Most Played Songs',
                           color='play_count',
-                          color_continuous_scale='Viridis')
+                          color_continuous_scale='Viridis',
+                          custom_data=['artist'])
         fig_songs.update_layout(
             yaxis={'categoryorder':'total ascending', 'title': None},
             xaxis_title='Number of Plays',
@@ -547,7 +548,7 @@ if selected_analysis == "🏠 Overview":
             coloraxis_showscale=False
         )
         fig_songs.update_traces(
-            hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
+            hovertemplate='<b>%{y}</b><br><b>Artist:</b> %{customdata[0]}<br>%{x:,} plays<extra></extra>',
             texttemplate='%{x:,}',
             textposition='outside',
             textfont=dict(color='#fafafa', size=11)
@@ -557,7 +558,7 @@ if selected_analysis == "🏠 Overview":
         
     with col2:
         st.subheader("🎤 Top Artists")
-        top_artists_df = pd.DataFrame(content_analytics['top_artists'][:10])
+        top_artists_df = csv_data['top_artists'].head(10).copy()
         # Truncate long artist names for better display
         top_artists_df['artist_display'] = top_artists_df['artist'].apply(
             lambda x: x if len(x) <= 30 else x[:27] + "..."
