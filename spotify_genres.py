@@ -13,6 +13,7 @@ from models import DimSong, DimGenre, DimSongGenre
 from database import SessionLocal
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from multiprocessing import Process
+import argparse
 
 CACHE_FILE = "artist_genre_cache.pkl"
 MAX_WORKERS = 10  # Tune this for your rate limit comfort
@@ -62,12 +63,23 @@ def fetch_artist_genres(artist_id, genre_cache):
             return artist_id, []
 
 def process_batch(session, songs, genre_cache):
+    # Preload all genres into a dict
+    all_genres = {g.genre_name: g for g in session.query(DimGenre).all()}
+    new_genres = []
+    new_links = []
+
+    # Preload all existing song-genre links for this batch
+    song_ids = [song.song_id for song in songs]
+    existing_links = set(
+        (sg.song_id, sg.genre_id)
+        for sg in session.query(DimSongGenre).filter(DimSongGenre.song_id.in_(song_ids)).all()
+    )
+
+    processed_song_ids = {sg[0] for sg in existing_links}
     for song in songs:
         print(f"Processing song_id={song.song_id}: {song.song_title}")
         try:
-            # Check if this song already has any genre relationships
-            existing_links = session.query(DimSongGenre).filter_by(song_id=song.song_id).first()
-            if existing_links:
+            if song.song_id in processed_song_ids:
                 print(f"Skipping song_id={song.song_id} (already processed)")
                 continue
 
@@ -78,7 +90,6 @@ def process_batch(session, songs, genre_cache):
             track = items[0]
             artist_ids = [artist['id'] for artist in track['artists']]
 
-            # Fetch genres for all artists in parallel
             song_genres = set()
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 futures = [executor.submit(fetch_artist_genres, artist_id, genre_cache) for artist_id in artist_ids]
@@ -86,25 +97,29 @@ def process_batch(session, songs, genre_cache):
                     _, genres = future.result()
                     song_genres.update(genres)
 
-            # Bulk fetch existing relationships for this song
-            existing_genre_ids = set(
-                gid for (gid,) in session.query(DimSongGenre.genre_id).filter_by(song_id=song.song_id).all()
-            )
-
-            new_links = []
             for genre_name in song_genres:
-                genre = get_or_create_genre(session, genre_name)
-                if genre.genre_id not in existing_genre_ids:
-                    link = DimSongGenre(song_id=song.song_id, genre_id=genre.genre_id)
+                genre = all_genres.get(genre_name)
+                if not genre:
+                    genre = DimGenre(genre_name=genre_name)
+                    new_genres.append(genre)
+                    all_genres[genre_name] = genre
+                if (song.song_id, genre.genre_id) not in existing_links:
+                    link = DimSongGenre(song_id=song.song_id, genre=genre)
                     new_links.append(link)
-
-            if new_links:
-                session.add_all(new_links)
-                session.commit()
-            time.sleep(0.1)  # Be nice to the API
         except Exception as e:
             print(f"Error processing song_id={song.song_id}: {e}")
             session.rollback()
+
+    if new_genres:
+        session.add_all(new_genres)
+        session.commit()
+        # Update all_genres with DB-generated IDs
+        for genre in new_genres:
+            all_genres[genre.genre_name] = genre
+
+    if new_links:
+        session.add_all(new_links)
+        session.commit()
 
 def process_song_chunk(offset, batch_size, total):
     session = SessionLocal()
@@ -116,10 +131,15 @@ def process_song_chunk(offset, batch_size, total):
         save_cache(genre_cache)
     session.close()
 
-def main():
+def main(min_id=None, max_id=None):
     session = SessionLocal()
     batch_size = 2000
-    total = session.query(DimSong).count()
+    query = session.query(DimSong)
+    if min_id is not None:
+        query = query.filter(DimSong.song_id >= min_id)
+    if max_id is not None:
+        query = query.filter(DimSong.song_id <= max_id)
+    total = query.count()
     session.close()
 
     num_workers = 8  # Use all CPU cores
@@ -137,4 +157,8 @@ def main():
         proc.join()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--min_id", type=int, default=None)
+    parser.add_argument("--max_id", type=int, default=None)
+    args = parser.parse_args()
+    main(min_id=args.min_id, max_id=args.max_id)
