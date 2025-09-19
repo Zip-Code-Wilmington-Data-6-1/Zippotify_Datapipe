@@ -18,7 +18,7 @@ AZ,Kings Of Leon,10,1
 AZ,Jack Johnson,9,2
 AZ,Eminem,8,3
 AZ,OneRepublic,8,4
-AZ,BjÃÂ¶rk,8,5
+AZ,Bjork,8,5
 CA,Kings Of Leon,63,1
 CA,Coldplay,59,2
 CA,Muse,42,3
@@ -47,11 +47,11 @@ DE,Red Hot Chili Peppers,2,5
 FL,Coldplay,19,1
 FL,Kings Of Leon,15,2
 FL,Alliance Ethnik,15,3
-FL,BjÃÂ¶rk,14,4
+FL,Bjork,14,4
 FL,Florence + The Machine,14,5
 GA,Coldplay,15,1
 GA,Kings Of Leon,13,2
-GA,BjÃÂ¶rk,13,3
+GA,Bjork,13,3
 GA,Muse,12,4
 GA,Florence + The Machine,10,5
 HI,Los Rodriguez,2,1
@@ -60,7 +60,7 @@ HI,Masta Killa,1,3
 HI,My Chemical Romance,1,4
 HI,Newsboys,1,5
 IA,Muse,4,1
-IA,BjÃÂ¶rk,4,2
+IA,Bjork,4,2
 IA,Jack Johnson,4,3
 IA,Guns N' Roses,4,4
 IA,Eminem,3,5
@@ -79,7 +79,7 @@ IN,Florence + The Machine,6,2
 IN,Black Eyed Peas,5,3
 IN,Dwight Yoakam,4,4
 IN,The All-American Rejects,4,5
-KS,BjÃÂ¶rk,8,1
+KS,Bjork,8,1
 KS,Metallica,6,2
 KS,Taylor Swift,6,3
 KS,Eminem,6,4
@@ -93,10 +93,10 @@ LA,Florence + The Machine,3,1
 LA,Coldplay,2,2
 LA,Mystikal,2,3
 LA,Band Of Horses,2,4
-LA,BjÃÂ¶rk,2,5
+LA,Bjork,2,5
 MA,Coldplay,12,1
 MA,Kings Of Leon,8,2
-MA,BjÃÂ¶rk,8,3
+MA,Bjork,8,3
 MA,Radiohead,8,4
 MA,Florence + The Machine,7,5
 MD,Kings Of Leon,11,1
@@ -113,7 +113,7 @@ MI,Coldplay,12,1
 MI,The Black Keys,11,2
 MI,Harmonia,7,3
 MI,Daft Punk,6,4
-MI,BjÃÂ¶rk,6,5
+MI,Bjork,6,5
 MN,Coldplay,8,1
 MN,Linkin Park,6,2
 MN,Dwight Yoakam,6,3
@@ -150,7 +150,7 @@ NE,Kings Of Leon,2,3
 NE,Brooklyn Bounce,2,4
 NE,Pepper,2,5
 NH,Coldplay,2,1
-NH,BjÃÂ¶rk,2,2
+NH,Bjork,2,2
 NH,10_000 Maniacs,1,3
 NH,Mike And The Mechanics,1,4
 NH,Panic At The Disco,1,5
@@ -174,7 +174,7 @@ NY,Kings Of Leon,26,2
 NY,Justin Bieber,24,3
 NY,Jack Johnson,24,4
 NY,Radiohead,20,5
-OH,BjÃÂ¶rk,16,1
+OH,Bjork,16,1
 OH,Kings Of Leon,15,2
 OH,Coldplay,12,3
 OH,Dwight Yoakam,11,4
@@ -187,7 +187,7 @@ OK,Florence + The Machine,7,5
 OR,Black Eyed Peas,4,1
 OR,Taylor Swift,3,2
 OR,Kings Of Leon,3,3
-OR,BjÃÂ¶rk,3,4
+OR,Bjork,3,4
 OR,Coldplay,3,5
 PA,Kings Of Leon,19,1
 PA,Coldplay,18,2
@@ -210,7 +210,7 @@ SD,Kings Of Leon,3,3
 SD,Dwight Yoakam,3,4
 SD,matchbox twenty,2,5
 TN,Kings Of Leon,10,1
-TN,BjÃÂ¶rk,9,2
+TN,Bjork,9,2
 TN,Coldplay,8,3
 TN,Harmonia,7,4
 TN,Alliance Ethnik,7,5
