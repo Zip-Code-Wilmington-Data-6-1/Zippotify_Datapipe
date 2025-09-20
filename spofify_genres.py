@@ -9,12 +9,13 @@ import time
 import pickle
 from spotipy.oauth2 import SpotifyClientCredentials
 from sqlalchemy.orm import Session
-from models import DimSong, DimGenre, DimSongGenre
+from models import DimSong, DimGenre, DimSongGenre, FactPlays
+from sqlalchemy import func
 from database import SessionLocal
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 CACHE_FILE = "artist_genre_cache.pkl"
-MAX_WORKERS = 10  # Tune this for your rate limit comfort
+MAX_WORKERS = 1  # Reduced to avoid rate limiting
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
@@ -86,24 +87,38 @@ def process_batch(session, songs, genre_cache):
                     link = DimSongGenre(song_id=song.song_id, genre_id=genre.genre_id)
                     session.add(link)
             session.commit()
-            time.sleep(0.1)  # Be nice to the API
+            time.sleep(3.0)  # Much longer delay to avoid rate limiting
         except Exception as e:
             print(f"Error processing song_id={song.song_id}: {e}")
             session.rollback()
 
 def main():
     session = SessionLocal()
-    batch_size = 1000  # Only process 1000 songs for testing
+    batch_size = 10  # Much smaller batches to avoid rate limiting
     offset = 0
     total = session.query(DimSong).count()
     genre_cache = load_cache()
 
-    print(f"\nProcessing batch {offset} to {offset+batch_size} of {total} (LIMITED TO 1000 SONGS FOR TEST)")
-    songs = session.query(DimSong).order_by(DimSong.song_id).offset(offset).limit(batch_size).all()
-    if songs:
+    print(f"\nProcessing ALL {total} songs in the database (very slowly to avoid rate limits)")
+    
+    while offset < total:
+        print(f"Processing batch {offset} to {min(offset+batch_size, total)} of {total}")
+        # Get songs ordered by how often they're played (most popular first)
+        songs = session.query(DimSong).join(FactPlays, DimSong.song_id == FactPlays.song_id).group_by(DimSong.song_id, DimSong.song_title).order_by(func.count(FactPlays.play_id).desc()).offset(offset).limit(batch_size).all()
+        
+        if not songs:
+            break
+            
         process_batch(session, songs, genre_cache)
-        save_cache(genre_cache)
+        save_cache(genre_cache)  # Save cache after each batch
+        
+        offset += batch_size
+        
+        # Much longer delay between batches to avoid rate limiting
+        print("Waiting 60 seconds between batches to be API-friendly...")
+        time.sleep(60)
 
+    print(f"Completed processing all {total} songs!")
     session.close()
 
 if __name__ == "__main__":
