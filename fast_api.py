@@ -414,3 +414,56 @@ def get_user_profiles(db: Session = Depends(get_db)):
         for u in users
     ]
 
+# Popular artist by state (all-time)
+@app.get("/content_analytics/popular_artist_by_state")
+def get_popular_artist_by_state(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    subq = (
+        db.query(
+            FactPlays.location_id,
+            FactPlays.artist_id,
+            func.count(FactPlays.play_id).label("play_count")
+        )
+        .group_by(FactPlays.location_id, FactPlays.artist_id)
+        .subquery()
+    )
+    results = (
+        db.query(DimLocation.state, DimArtist.artist_name, subq.c.play_count)
+        .join(subq, subq.c.location_id == DimLocation.location_id)
+        .join(DimArtist, subq.c.artist_id == DimArtist.artist_id)
+        .order_by(DimLocation.state, subq.c.play_count.desc())
+        .all()
+    )
+    # For each state, pick the top artist
+    top_per_state = {}
+    for state, artist, count in results:
+        if state not in top_per_state:
+            top_per_state[state] = {"artist": artist, "play_count": count}
+    return top_per_state
+
+# Most popular artist by year
+@app.get("/content_analytics/most_popular_artist_by_year")
+def get_most_popular_artist_by_year(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    subq = (
+        db.query(
+            DimTime.year,
+            FactPlays.artist_id,
+            func.count(FactPlays.play_id).label("play_count")
+        )
+        .join(DimTime, FactPlays.time_key == DimTime.time_key)
+        .group_by(DimTime.year, FactPlays.artist_id)
+        .subquery()
+    )
+    results = (
+        db.query(subq.c.year, DimArtist.artist_name, subq.c.play_count)
+        .join(DimArtist, subq.c.artist_id == DimArtist.artist_id)
+        .order_by(subq.c.year, subq.c.play_count.desc())
+        .all()
+    )
+    # For each year, pick the top artist
+    top_per_year = {}
+    for year, artist, count in results:
+        if year not in top_per_year:
+            top_per_year[year] = {"artist": artist, "play_count": count}
+    return top_per_year
