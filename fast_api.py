@@ -233,9 +233,17 @@ def get_age_distribution(db: Session = Depends(get_db)):
 # Example: Subscription levels
 @app.get("/user_analytics/subscription_levels")
 def get_subscription_levels(db: Session = Depends(get_db)):
-    free = db.query(DimUser).filter(DimUser.user_level == 'free').count()
-    paid = db.query(DimUser).filter(DimUser.user_level == 'paid').count()
-    return {"free": free, "paid": paid}
+    # Get distinct users by subscription level from FactPlays
+    results = (
+        db.query(FactPlays.user_level, func.count(func.distinct(FactPlays.user_id)).label("user_count"))
+        .group_by(FactPlays.user_level)
+        .all()
+    )
+    subscription_levels = {}
+    for level, count in results:
+        if level:  # Only count non-null levels
+            subscription_levels[level] = count
+    return subscription_levels
 
 # Example: Genre popularity
 @app.get("/content_analytics/genre_popularity")
@@ -467,3 +475,149 @@ def get_most_popular_artist_by_year(db: Session = Depends(get_db)):
         if year not in top_per_year:
             top_per_year[year] = {"artist": artist, "play_count": count}
     return top_per_year
+
+# NEW SPECIFIC LOCATION & TIME FILTERING ENDPOINTS
+
+# Most popular artists by specific state
+@app.get("/content_analytics/popular_artists_by_state/{state}")
+def get_popular_artists_by_state(state: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimLocation, FactPlays.location_id == DimLocation.location_id)
+        .filter(DimLocation.state.ilike(f"%{state}%"))
+        .group_by(DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"artist": r[0], "play_count": r[1]} for r in results]
+
+# Most popular songs by specific state  
+@app.get("/content_analytics/popular_songs_by_state/{state}")
+def get_popular_songs_by_state(state: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimSong.song_title, DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.song_id == DimSong.song_id)
+        .join(DimArtist, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimLocation, FactPlays.location_id == DimLocation.location_id)
+        .filter(DimLocation.state.ilike(f"%{state}%"))
+        .group_by(DimSong.song_title, DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"song": r[0], "artist": r[1], "play_count": r[2]} for r in results]
+
+# Most popular artists by specific city
+@app.get("/content_analytics/popular_artists_by_city/{city}")
+def get_popular_artists_by_city(city: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimLocation, FactPlays.location_id == DimLocation.location_id)
+        .filter(DimLocation.city.ilike(f"%{city}%"))
+        .group_by(DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"artist": r[0], "play_count": r[1]} for r in results]
+
+# Most popular songs by specific city
+@app.get("/content_analytics/popular_songs_by_city/{city}")
+def get_popular_songs_by_city(city: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimSong.song_title, DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.song_id == DimSong.song_id)
+        .join(DimArtist, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimLocation, FactPlays.location_id == DimLocation.location_id)
+        .filter(DimLocation.city.ilike(f"%{city}%"))
+        .group_by(DimSong.song_title, DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"song": r[0], "artist": r[1], "play_count": r[2]} for r in results]
+
+# Most popular artists by specific date
+@app.get("/content_analytics/popular_artists_by_date/{date}")
+def get_popular_artists_by_date(date: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimTime, FactPlays.time_key == DimTime.time_key)
+        .filter(DimTime.date == date)
+        .group_by(DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"artist": r[0], "play_count": r[1]} for r in results]
+
+# Most popular songs by specific date
+@app.get("/content_analytics/popular_songs_by_date/{date}")
+def get_popular_songs_by_date(date: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimSong.song_title, DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.song_id == DimSong.song_id)
+        .join(DimArtist, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimTime, FactPlays.time_key == DimTime.time_key)
+        .filter(DimTime.date == date)
+        .group_by(DimSong.song_title, DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"song": r[0], "artist": r[1], "play_count": r[2]} for r in results]
+
+# Most popular artists by date range
+@app.get("/content_analytics/popular_artists_by_date_range")
+def get_popular_artists_by_date_range(start_date: str, end_date: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimTime, FactPlays.time_key == DimTime.time_key)
+        .filter(DimTime.date >= start_date)
+        .filter(DimTime.date <= end_date)
+        .group_by(DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"artist": r[0], "play_count": r[1]} for r in results]
+
+# Most popular songs by date range
+@app.get("/content_analytics/popular_songs_by_date_range")
+def get_popular_songs_by_date_range(start_date: str, end_date: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimSong.song_title, DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.song_id == DimSong.song_id)
+        .join(DimArtist, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimTime, FactPlays.time_key == DimTime.time_key)
+        .filter(DimTime.date >= start_date)
+        .filter(DimTime.date <= end_date)
+        .group_by(DimSong.song_title, DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"song": r[0], "artist": r[1], "play_count": r[2]} for r in results]
+
+# Combined filter: popular artists by state and date range
+@app.get("/content_analytics/popular_artists_by_state_and_date")
+def get_popular_artists_by_state_and_date(state: str, start_date: str, end_date: str, limit: int = 10, db: Session = Depends(get_db)):
+    results = (
+        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+        .join(DimLocation, FactPlays.location_id == DimLocation.location_id)
+        .join(DimTime, FactPlays.time_key == DimTime.time_key)
+        .filter(DimLocation.state.ilike(f"%{state}%"))
+        .filter(DimTime.date >= start_date)
+        .filter(DimTime.date <= end_date)
+        .group_by(DimArtist.artist_name)
+        .order_by(desc("play_count"))
+        .limit(limit)
+        .all()
+    )
+    return [{"artist": r[0], "play_count": r[1]} for r in results]
