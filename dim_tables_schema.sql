@@ -38,7 +38,7 @@ IF NOT EXISTS dim_genre
 CREATE TABLE
 IF NOT EXISTS dim_song
 (
-    song_id INT PRIMARY KEY,
+    song_id SERIAL PRIMARY KEY,
     song_title VARCHAR
 (255)
 );
@@ -49,10 +49,8 @@ CASCADE;
 CREATE TABLE
 IF NOT EXISTS dim_song_genre
 (
-    song_id VARCHAR
-(36) NOT NULL,
-    genre_id VARCHAR
-(36) NOT NULL,
+    song_id INT NOT NULL,
+    genre_id INT NOT NULL,
     PRIMARY KEY
 (song_id, genre_id),
     FOREIGN KEY
