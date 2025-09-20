@@ -270,7 +270,21 @@ def load_fact_plays(jsonl_path, chunk_size=5000):
     times_df = pd.read_sql_table('dim_time', engine)
     df = pd.read_json(jsonl_path, lines=True)
     df = df.dropna(subset=['userId', 'song', 'artist', 'city', 'state', 'lat', 'lon', 'ts'])
-    df = df.rename(columns={'userId': 'user_id', 'song': 'song_title', 'artist': 'artist_name', 'city': 'city', 'state': 'state', 'lat': 'latitude', 'lon': 'longitude'})
+    df = df.rename(columns={
+        'userId': 'user_id',
+        'song': 'song_title',
+        'artist': 'artist_name',
+        'city': 'city',
+        'state': 'state',
+        'lat': 'latitude',
+        'lon': 'longitude',
+        'sessionId': 'session_id',
+        'level': 'user_level',
+        'duration': 'duration_ms',
+    })
+    # Convert duration from seconds to ms (if not already in ms)
+    if 'duration_ms' in df.columns:
+        df['duration_ms'] = (df['duration_ms'] * 1000).astype(int)
     df = df.merge(users_df[['user_id']], on='user_id', how='inner')
     df = df.merge(songs_df[['song_id', 'song_title']], on='song_title', how='inner')
     df = df.merge(artists_df[['artist_id', 'artist_name']], on='artist_name', how='inner')
@@ -286,7 +300,10 @@ def load_fact_plays(jsonl_path, chunk_size=5000):
             'song_id': row['song_id'],
             'artist_id': row['artist_id'],
             'location_id': row['location_id'],
-            'time_key': dim_time.time_key
+            'time_key': dim_time.time_key,
+            'duration_ms': row.get('duration_ms'),
+            'session_id': str(row.get('session_id')) if not pd.isna(row.get('session_id')) else None,
+            'user_level': row.get('user_level')
         })
     fact_plays_df = pd.DataFrame(fact_plays)
     print(f"Inserting {len(fact_plays_df)} new fact plays")
