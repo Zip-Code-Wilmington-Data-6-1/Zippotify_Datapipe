@@ -3,7 +3,7 @@ services:
     image: postgres:16
     container_name: zippotify-db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: zc
       POSTGRES_PASSWORD: zcpass
@@ -19,7 +19,7 @@ services:
   api:
     build: .
     environment:
-      - DATABASE_URL=postgresql+psycopg2://zc:zcpass@db:5432/zippotify  # container-to-db
+      - DATABASE_URL=postgresql+psycopg2://zc:zcpass@db:5432/zippotify # container-to-db
       - AWS_PROFILE=tracktionai-dev
       - AWS_REGION=us-east-1
       - AWS_SDK_LOAD_CONFIG=1
