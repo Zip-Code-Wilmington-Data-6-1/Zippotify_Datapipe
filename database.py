@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # load .env first
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://zc:zcpass@localhost:5432/zippotify")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://zc:zcpass@localhost:5433/zippotify")
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)

@@ -2,7 +2,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func, desc
 from database import SessionLocal
 
 def get_db():
@@ -194,7 +194,7 @@ def get_metadata(db: Session = Depends(get_db)):
     total_status_changes = db.query(FactPlays).filter(FactPlays.user_level.isnot(None)).count()  # Example logic
 
     # Get min/max date from DimTime
-    date_range = db.query(db.func.min(DimTime.date), db.func.max(DimTime.date)).first()
+    date_range = db.query(func.min(DimTime.date), func.max(DimTime.date)).first()
     return {
         "generated_at": datetime.now().isoformat(),
         "total_users": total_users,
@@ -209,7 +209,7 @@ def get_metadata(db: Session = Depends(get_db)):
 def get_daily_active_users(db: Session = Depends(get_db)):
     # Count distinct users per day
     results = (
-        db.query(DimTime.date, db.func.count(db.func.distinct(FactPlays.user_id)).label("active_users"))
+        db.query(DimTime.date, func.count(func.distinct(FactPlays.user_id)).label("active_users"))
         .join(FactPlays, FactPlays.time_key == DimTime.time_key)
         .group_by(DimTime.date)
         .order_by(DimTime.date)
@@ -223,7 +223,7 @@ def get_age_distribution(db: Session = Depends(get_db)):
     # Example: group users by age (assuming birthday is year of birth)
     current_year = datetime.now().year
     results = (
-        db.query((current_year - DimUser.birthday).label("age"), db.func.count(DimUser.user_id))
+        db.query((current_year - DimUser.birthday).label("age"), func.count(DimUser.user_id))
         .group_by("age")
         .order_by("age")
         .all()
@@ -241,11 +241,11 @@ def get_subscription_levels(db: Session = Depends(get_db)):
 @app.get("/content_analytics/genre_popularity")
 def get_genre_popularity(db: Session = Depends(get_db)):
     results = (
-        db.query(DimGenre.genre_name, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(DimGenre.genre_name, func.count(FactPlays.play_id).label("play_count"))
         .join(DimSongGenre, DimSongGenre.genre_id == DimGenre.genre_id)
         .join(FactPlays, FactPlays.song_id == DimSongGenre.song_id)
         .group_by(DimGenre.genre_name)
-        .order_by(db.desc("play_count"))
+        .order_by(desc("play_count"))
         .all()
     )
     return [{"genre": r[0], "play_count": r[1]} for r in results]
@@ -254,10 +254,10 @@ def get_genre_popularity(db: Session = Depends(get_db)):
 @app.get("/content_analytics/top_artists")
 def get_top_artists(db: Session = Depends(get_db)):
     results = (
-        db.query(DimArtist.artist_name, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
         .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
         .group_by(DimArtist.artist_name)
-        .order_by(db.desc("play_count"))
+        .order_by(desc("play_count"))
         .limit(10)
         .all()
     )
@@ -267,11 +267,11 @@ def get_top_artists(db: Session = Depends(get_db)):
 @app.get("/content_analytics/top_songs_by_state")
 def get_top_songs_by_state(db: Session = Depends(get_db)):
     results = (
-        db.query(DimLocation.state, DimSong.song_title, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(DimLocation.state, DimSong.song_title, func.count(FactPlays.play_id).label("play_count"))
         .join(FactPlays, FactPlays.location_id == DimLocation.location_id)
         .join(DimSong, FactPlays.song_id == DimSong.song_id)
         .group_by(DimLocation.state, DimSong.song_title)
-        .order_by(DimLocation.state, db.desc("play_count"))
+        .order_by(DimLocation.state, desc("play_count"))
         .all()
     )
     # Group by state
@@ -312,11 +312,11 @@ def get_top_song_per_state(db: Session = Depends(get_db)):
 @app.get("/content_analytics/top_artists_by_state")
 def get_top_artists_by_state(db: Session = Depends(get_db)):
     results = (
-        db.query(DimLocation.state, DimArtist.artist_name, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(DimLocation.state, DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
         .join(FactPlays, FactPlays.location_id == DimLocation.location_id)
         .join(DimArtist, FactPlays.artist_id == DimArtist.artist_id)
         .group_by(DimLocation.state, DimArtist.artist_name)
-        .order_by(DimLocation.state, db.desc("play_count"))
+        .order_by(DimLocation.state, desc("play_count"))
         .all()
     )
     from collections import defaultdict
@@ -355,7 +355,7 @@ def get_top_artist_per_state(db: Session = Depends(get_db)):
 # Average plays per session
 @app.get("/content_analytics/average_plays_per_session")
 def get_average_plays_per_session(db: Session = Depends(get_db)):
-    total_plays = db.query(FactPlays.session_id, db.func.count(FactPlays.play_id)).group_by(FactPlays.session_id).all()
+    total_plays = db.query(FactPlays.session_id, func.count(FactPlays.play_id)).group_by(FactPlays.session_id).all()
     if not total_plays:
         return {"average_plays_per_session": 0.0}
     avg = sum([c for _, c in total_plays]) / len(total_plays)
@@ -365,7 +365,7 @@ def get_average_plays_per_session(db: Session = Depends(get_db)):
 @app.get("/engagement_analytics/by_subscription_level")
 def get_engagement_by_level(db: Session = Depends(get_db)):
     results = (
-        db.query(FactPlays.user_level, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(FactPlays.user_level, func.count(FactPlays.play_id).label("play_count"))
         .group_by(FactPlays.user_level)
         .all()
     )
@@ -375,7 +375,7 @@ def get_engagement_by_level(db: Session = Depends(get_db)):
 @app.get("/engagement_analytics/hourly_patterns")
 def get_hourly_patterns(db: Session = Depends(get_db)):
     results = (
-        db.query(DimTime.hour, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(DimTime.hour, func.count(FactPlays.play_id).label("play_count"))
         .join(FactPlays, FactPlays.time_key == DimTime.time_key)
         .group_by(DimTime.hour)
         .order_by(DimTime.hour)
@@ -387,7 +387,7 @@ def get_hourly_patterns(db: Session = Depends(get_db)):
 @app.get("/engagement_analytics/geographic_distribution")
 def get_geographic_distribution(db: Session = Depends(get_db)):
     results = (
-        db.query(DimLocation.state, DimLocation.city, db.func.count(FactPlays.play_id).label("play_count"))
+        db.query(DimLocation.state, DimLocation.city, func.count(FactPlays.play_id).label("play_count"))
         .join(FactPlays, FactPlays.location_id == DimLocation.location_id)
         .group_by(DimLocation.state, DimLocation.city)
         .order_by(DimLocation.state, DimLocation.city)

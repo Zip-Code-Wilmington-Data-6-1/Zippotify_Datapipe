@@ -40,7 +40,7 @@ IF NOT EXISTS dim_song
 (
     song_id INT PRIMARY KEY,
     song_title VARCHAR
-(255),
+(255)
 );
 
 -- Song-Genre Bridge
