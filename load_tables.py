@@ -281,16 +281,32 @@ if __name__ == "__main__":
     # Load data in the correct order
     print("Loading users and locations...")
     load_users_and_locations("data/sample/listen_events_head.jsonl")
+    load_users_and_locations("data/sample/auth_events_head.jsonl")
+    load_users_and_locations("data/sample/page_view_events_head.jsonl")
+    load_users_and_locations("data/sample/status_change_events_head.jsonl")
     
     print("Loading artists...")
     load_artists("data/sample/listen_events_head.jsonl")
+    load_artists("data/sample/auth_events_head.jsonl")
+    load_artists("data/sample/page_view_events_head.jsonl")
+    load_artists("data/sample/status_change_events_head.jsonl")
+
     
     print("Loading songs...")
     load_songs("data/sample/listen_events_head.jsonl")
+    load_songs("data/sample/auth_events_head.jsonl")
+    load_songs("data/sample/page_view_events_head.jsonl")
+    load_songs("data/sample/status_change_events_head.jsonl")
 
     print("Loading song-artist relationships...")
-    load_song_artist_relationships("data/sample/listen_events_head.jsonl")
+    load_song_artist_relationships("data/sample/listen_events_head.jsonl") 
+    load_song_artist_relationships("data/sample/auth_events_head.jsonl")
+    load_song_artist_relationships("data/sample/page_view_events_head.jsonl")
+    load_song_artist_relationships("data/sample/status_change_events_head.jsonl")
 
     print("Loading fact plays and time dimension...")
     load_fact_plays("data/sample/listen_events_head.jsonl")
+    load_fact_plays("data/sample/auth_events_head.jsonl")
+    load_fact_plays("data/sample/page_view_events_head.jsonl")
+    load_fact_plays("data/sample/status_change_events_head.jsonl")
     print("FactPlays and DimTime loaded!")
