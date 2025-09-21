@@ -461,10 +461,37 @@ st.divider()
 
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("🎛️ Dashboard Filters")
+
+# Add Tech Stack and QR Code buttons at the top left of sidebar
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    if st.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technology Stack"):
+        st.session_state.show_tech_stack = True
+        st.session_state.show_qr_code = False
+with col2:
+    if st.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
+        st.session_state.show_qr_code = True  
+        st.session_state.show_tech_stack = False
+
+# Initialize session state if not exists
+if 'show_tech_stack' not in st.session_state:
+    st.session_state.show_tech_stack = False
+if 'show_qr_code' not in st.session_state:
+    st.session_state.show_qr_code = False
+
 selected_analysis = st.sidebar.selectbox(
     "Choose Analysis View",
     ["🏠 Overview", "🌍 Regional Analysis", "👥 Demographics", "🎵 Music Trends", "📊 Engagement Metrics"]
 )
+
+# Reset image displays when user selects a dropdown option
+if st.session_state.get('show_tech_stack', False) or st.session_state.get('show_qr_code', False):
+    # Only reset if user is actively using the dropdown (not on first load)
+    if 'previous_analysis' in st.session_state and st.session_state.previous_analysis != selected_analysis:
+        st.session_state.show_tech_stack = False
+        st.session_state.show_qr_code = False
+
+st.session_state.previous_analysis = selected_analysis
 
 # State filter for regional analysis
 if selected_analysis == "🌍 Regional Analysis":
@@ -483,671 +510,739 @@ st.sidebar.metric("Unique Genres", f"{len(content_analytics['genre_popularity'])
 
 # === MAIN DASHBOARD CONTENT ===
 
-if selected_analysis == "🏠 Overview":
-    # --- KPI METRICS ---
-    st.subheader("📊 Key Performance Indicators")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        avg_dau = sum([day['daily_active_users'] for day in user_analytics['daily_active_users']]) / len(user_analytics['daily_active_users'])
-        st.metric("Avg Daily Active Users", f"{int(avg_dau):,}")
+# Handle Tech Stack and QR Code full-screen displays
+if st.session_state.get('show_tech_stack', False):
+    try:
+        st.image("../TechStack.png", use_container_width=True)
+    except Exception as e:
+        st.error("Tech Stack image not found. Please ensure TechStack.png is in the project directory.")
+    if st.button("🔙 Back to Dashboard"):
+        st.session_state.show_tech_stack = False
+        st.rerun()
+
+elif st.session_state.get('show_qr_code', False):
+    try:
+        st.image("QRCodeForRepo.png", use_container_width=True)
+    except Exception as e:
+        st.error("QR Code image not found. Please ensure QRCodeForRepo.png is in the dashboard directory.")
+    if st.button("🔙 Back to Dashboard"):
+        st.session_state.show_qr_code = False
+        st.rerun()
+
+else:
+    # Normal dashboard content when no image is being displayed
+    if selected_analysis == "🏠 Overview":
+        # --- KPI METRICS ---
+        st.subheader("📊 Key Performance Indicators")
         
-    with col2:
-        paid_users = user_analytics['subscription_levels']['paid']
-        free_users = user_analytics['subscription_levels']['free']
-        paid_percent = (paid_users / (paid_users + free_users)) * 100
-        st.metric("Paid Subscribers", f"{paid_percent:.1f}%")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            avg_dau = sum([day['daily_active_users'] for day in user_analytics['daily_active_users']]) / len(user_analytics['daily_active_users'])
+            st.metric("Avg Daily Active Users", f"{int(avg_dau):,}")
+            
+        with col2:
+            paid_users = user_analytics['subscription_levels']['paid']
+            free_users = user_analytics['subscription_levels']['free']
+            paid_percent = (paid_users / (paid_users + free_users)) * 100
+            st.metric("Paid Subscribers", f"{paid_percent:.1f}%")
+            
+        with col3:
+            avg_plays_per_session = content_analytics['average_plays_per_session']
+            st.metric("Avg Songs/Session", f"{avg_plays_per_session:.1f}")
+            
+        with col4:
+            top_genre_plays = content_analytics['genre_popularity'][0]['play_count']
+            st.metric("Most Popular Genre", f"{content_analytics['genre_popularity'][0]['genre'].title()} ({top_genre_plays:,})")
         
-    with col3:
-        avg_plays_per_session = content_analytics['average_plays_per_session']
-        st.metric("Avg Songs/Session", f"{avg_plays_per_session:.1f}")
+        st.divider()
         
-    with col4:
-        top_genre_plays = content_analytics['genre_popularity'][0]['play_count']
-        st.metric("Most Popular Genre", f"{content_analytics['genre_popularity'][0]['genre'].title()} ({top_genre_plays:,})")
-    
-    st.divider()
-    
-    # --- DAILY ACTIVITY TREND ---
-    st.subheader("📈 Daily Activity Trends")
-    daily_df = pd.DataFrame(user_analytics['daily_active_users'])
-    daily_df['date'] = pd.to_datetime(daily_df['date'])
-    
-    fig_daily = px.line(daily_df, x='date', y='daily_active_users', 
-                       title='Daily Active Users Over Time',
-                       markers=True,
-                       line_shape='spline')
-    fig_daily.update_traces(
-        line=dict(color='#1f77b4', width=3),
-        marker=dict(size=8, color='#ff7f0e'),
-        hovertemplate='<b>%{x|%B %d, %Y}</b><br>%{y:,} users<extra></extra>'
-    )
-    fig_daily.update_layout(xaxis_title='Date', yaxis_title='Active Users')
-    fig_daily = apply_dark_theme(fig_daily)
-    st.plotly_chart(fig_daily, use_container_width=True)
-    
-    # --- TOP CONTENT ROW ---
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("🎵 Top Songs")
-        top_songs_df = csv_data['top_songs'].head(10).copy()
-        # Truncate long song names for y-axis display
-        top_songs_df['song_display'] = top_songs_df['song'].apply(
-            lambda x: x if len(x) <= 40 else x[:37] + "..."
+        # --- DAILY ACTIVITY TREND ---
+        st.subheader("📈 Daily Activity Trends")
+        daily_df = pd.DataFrame(user_analytics['daily_active_users'])
+        daily_df['date'] = pd.to_datetime(daily_df['date'])
+        
+        fig_daily = px.line(daily_df, x='date', y='daily_active_users', 
+                           title='Daily Active Users Over Time',
+                           markers=True,
+                           line_shape='spline')
+        fig_daily.update_traces(
+            line=dict(color='#1f77b4', width=3),
+            marker=dict(size=8, color='#ff7f0e'),
+            hovertemplate='<b>%{x|%B %d, %Y}</b><br>%{y:,} users<extra></extra>'
         )
+        fig_daily.update_layout(xaxis_title='Date', yaxis_title='Active Users')
+        fig_daily = apply_dark_theme(fig_daily)
+        st.plotly_chart(fig_daily, use_container_width=True)
         
-        fig_songs = px.bar(top_songs_df, x='play_count', y='song_display', orientation='h',
-                          title='Top 10 Most Played Songs',
-                          color='play_count',
-                          color_continuous_scale='Viridis',
-                          custom_data=['artist'])
-        fig_songs.update_layout(
-            yaxis={'categoryorder':'total ascending', 'title': None},
-            xaxis_title='Number of Plays',
-            showlegend=False,
+        # --- TOP CONTENT ROW ---
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🎵 Top Songs")
+            top_songs_df = csv_data['top_songs'].head(10).copy()
+            # Truncate long song names for y-axis display
+            top_songs_df['song_display'] = top_songs_df['song'].apply(
+                lambda x: x if len(x) <= 40 else x[:37] + "..."
+            )
+            
+            fig_songs = px.bar(top_songs_df, x='play_count', y='song_display', orientation='h',
+                              title='Top 10 Most Played Songs',
+                              color='play_count',
+                              color_continuous_scale='Viridis',
+                              custom_data=['artist'])
+            fig_songs.update_layout(
+                yaxis={'categoryorder':'total ascending', 'title': None},
+                xaxis_title='Number of Plays',
+                showlegend=False,
+                coloraxis_showscale=False
+            )
+            fig_songs.update_traces(
+                hovertemplate='<b>%{y}</b><br><b>Artist:</b> %{customdata[0]}<br>%{x:,} plays<extra></extra>',
+                texttemplate='%{x:,}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=11)
+            )
+            fig_songs = apply_dark_theme(fig_songs)
+            st.plotly_chart(fig_songs, use_container_width=True)
+            
+        with col2:
+            st.subheader("🎤 Top Artists")
+            top_artists_df = csv_data['top_artists'].head(10).copy()
+            # Truncate long artist names for better display
+            top_artists_df['artist_display'] = top_artists_df['artist'].apply(
+                lambda x: x if len(x) <= 30 else x[:27] + "..."
+            )
+            
+            fig_artists = px.bar(top_artists_df, x='play_count', y='artist_display', orientation='h',
+                               title='Top 10 Most Popular Artists',
+                               color='play_count',
+                               color_continuous_scale='Plasma')
+            fig_artists.update_layout(
+                yaxis={'categoryorder':'total ascending', 'title': None},
+                xaxis_title='Number of Plays',
+                showlegend=False,
+                coloraxis_showscale=False
+            )
+            fig_artists.update_traces(
+                hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
+                texttemplate='%{x:,}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=11)
+            )
+            fig_artists = apply_dark_theme(fig_artists)
+            st.plotly_chart(fig_artists, use_container_width=True)
+        
+        # --- GENRE & HOURLY PATTERNS ---
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🎨 Genre Distribution")
+            genre_df = pd.DataFrame(content_analytics['genre_popularity'])
+            fig_genre = px.pie(genre_df, names='genre', values='play_count',
+                              title='Music Genre Popularity',
+                              color_discrete_sequence=px.colors.qualitative.Set3)
+            fig_genre.update_traces(
+                textposition='inside',
+                textinfo='percent+label',
+                hovertemplate='<b>%{label}</b><br>%{value:,} plays<br>%{percent}<extra></extra>',
+                textfont=dict(size=12)
+            )
+            fig_genre = apply_dark_theme(fig_genre)
+            st.plotly_chart(fig_genre, use_container_width=True)
+        
+        with col2:
+            st.subheader("🕐 Hourly Listening Patterns")
+            hourly_df = csv_data['hourly_patterns']
+            fig_hourly = px.bar(hourly_df, x='hour', y='total_plays',
+                               title='Listening Activity by Hour',
+                               color='total_plays',
+                               color_continuous_scale='Turbo')
+            fig_hourly.update_layout(
+                xaxis_title='Hour of Day', 
+                yaxis_title='Total Plays',
+                coloraxis_showscale=False,
+                xaxis=dict(tickmode='linear', tick0=0, dtick=2)
+            )
+            fig_hourly.update_traces(
+                hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>',
+                texttemplate='%{y:,}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=10)
+            )
+            fig_hourly = apply_dark_theme(fig_hourly)
+            st.plotly_chart(fig_hourly, use_container_width=True)
+
+    elif selected_analysis == "🌍 Regional Analysis":
+        st.subheader("🗺️ Regional Music Preferences")
+        
+        # --- TOP ARTIST PER STATE MAP ---
+        st.markdown("### 🏆 Most Popular Artist by State")
+        
+        # Create state mapping for visualization
+        top_artist_state = csv_data['top_artist_per_state'].copy()
+        
+        # Display top states
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**🎯 Artist Champions by State**")
+            display_states = top_artist_state.nlargest(10, 'play_count')
+            for _, row in display_states.iterrows():
+                st.markdown(f"**{row['state']}**: {row['artist']} ({row['play_count']} plays)")
+        
+        with col2:
+            st.markdown("**📊 Regional Diversity**")
+            artist_dominance = top_artist_state['artist'].value_counts()
+            top_10_dominance = artist_dominance.head(10)
+            fig_dominance = px.bar(x=top_10_dominance.index, y=top_10_dominance.values,
+                                  title='Artists Leading Multiple States',
+                                  color=top_10_dominance.values,
+                                  color_continuous_scale='Cividis')
+            fig_dominance.update_layout(
+                xaxis_title='Artist', 
+                yaxis_title='States Led',
+                coloraxis_showscale=False,
+                xaxis=dict(tickangle=45)
+            )
+            fig_dominance.update_traces(
+                hovertemplate='<b>%{x}</b><br>Leading in %{y} states<extra></extra>',
+                texttemplate='%{y}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=11)
+            )
+            fig_dominance = apply_dark_theme(fig_dominance)
+            st.plotly_chart(fig_dominance, use_container_width=True)
+        
+        st.divider()
+        
+        # --- STATE-SPECIFIC ANALYSIS ---
+        if selected_states:
+            st.markdown(f"### 🎵 Detailed Analysis for Selected States")
+            
+            # Filter data for selected states
+            filtered_artists = csv_data['top_artists_by_state'][
+                csv_data['top_artists_by_state']['state'].isin(selected_states)
+            ]
+            filtered_songs = csv_data['top_songs_by_state'][
+                csv_data['top_songs_by_state']['state'].isin(selected_states)
+            ]
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**🎤 Top Artists in Selected States**")
+                # Show top 5 artists per selected state
+                for state in selected_states[:5]:  # Limit to first 5 states for readability
+                    state_artists = filtered_artists[filtered_artists['state'] == state].head(3)
+                    st.markdown(f"**{state}:**")
+                    for _, row in state_artists.iterrows():
+                        st.markdown(f"  {row['rank']}. {row['artist']} ({row['play_count']} plays)")
+            
+            with col2:
+                st.markdown("**🎵 Top Songs in Selected States**")
+                for state in selected_states[:5]:
+                    state_songs = filtered_songs[filtered_songs['state'] == state].head(3)
+                    st.markdown(f"**{state}:**")
+                    for _, row in state_songs.iterrows():
+                        st.markdown(f"  {row['rank']}. {row['song']} by {row['artist']}")
+        
+        # --- GEOGRAPHIC CONCENTRATION ---
+        st.subheader("📍 Geographic Activity Hotspots")
+        geo_df = csv_data['geographic_analysis'].head(15)
+        fig_geo = px.bar(geo_df, x='total_plays', y='city', orientation='h',
+                        title='Top 15 Cities by Total Plays',
+                        hover_data=['state', 'unique_users'],
+                        color='total_plays',
+                        color_continuous_scale='Inferno')
+        fig_geo.update_layout(
+            yaxis={'categoryorder':'total ascending'},
+            xaxis_title='Total Plays',
+            yaxis_title=None,
             coloraxis_showscale=False
         )
-        fig_songs.update_traces(
-            hovertemplate='<b>%{y}</b><br><b>Artist:</b> %{customdata[0]}<br>%{x:,} plays<extra></extra>',
+        fig_geo.update_traces(
+            hovertemplate='<b>%{y}, %{customdata[0]}</b><br>%{x:,} total plays<br>%{customdata[1]} unique users<extra></extra>',
             texttemplate='%{x:,}',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=11)
-        )
-        fig_songs = apply_dark_theme(fig_songs)
-        st.plotly_chart(fig_songs, use_container_width=True)
-        
-    with col2:
-        st.subheader("🎤 Top Artists")
-        top_artists_df = csv_data['top_artists'].head(10).copy()
-        # Truncate long artist names for better display
-        top_artists_df['artist_display'] = top_artists_df['artist'].apply(
-            lambda x: x if len(x) <= 30 else x[:27] + "..."
-        )
-        
-        fig_artists = px.bar(top_artists_df, x='play_count', y='artist_display', orientation='h',
-                           title='Top 10 Most Popular Artists',
-                           color='play_count',
-                           color_continuous_scale='Plasma')
-        fig_artists.update_layout(
-            yaxis={'categoryorder':'total ascending', 'title': None},
-            xaxis_title='Number of Plays',
-            showlegend=False,
-            coloraxis_showscale=False
-        )
-        fig_artists.update_traces(
-            hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
-            texttemplate='%{x:,}',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=11)
-        )
-        fig_artists = apply_dark_theme(fig_artists)
-        st.plotly_chart(fig_artists, use_container_width=True)
-    
-    # --- GENRE & HOURLY PATTERNS ---
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("🎨 Genre Distribution")
-        genre_df = pd.DataFrame(content_analytics['genre_popularity'])
-        fig_genre = px.pie(genre_df, names='genre', values='play_count',
-                          title='Music Genre Popularity',
-                          color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_genre.update_traces(
-            textposition='inside',
-            textinfo='percent+label',
-            hovertemplate='<b>%{label}</b><br>%{value:,} plays<br>%{percent}<extra></extra>',
-            textfont=dict(size=12)
-        )
-        fig_genre = apply_dark_theme(fig_genre)
-        st.plotly_chart(fig_genre, use_container_width=True)
-    
-    with col2:
-        st.subheader("🕐 Hourly Listening Patterns")
-        hourly_df = csv_data['hourly_patterns']
-        fig_hourly = px.bar(hourly_df, x='hour', y='total_plays',
-                           title='Listening Activity by Hour',
-                           color='total_plays',
-                           color_continuous_scale='Turbo')
-        fig_hourly.update_layout(
-            xaxis_title='Hour of Day', 
-            yaxis_title='Total Plays',
-            coloraxis_showscale=False,
-            xaxis=dict(tickmode='linear', tick0=0, dtick=2)
-        )
-        fig_hourly.update_traces(
-            hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>',
-            texttemplate='%{y:,}',
             textposition='outside',
             textfont=dict(color='#fafafa', size=10)
         )
-        fig_hourly = apply_dark_theme(fig_hourly)
-        st.plotly_chart(fig_hourly, use_container_width=True)
-
-elif selected_analysis == "🌍 Regional Analysis":
-    st.subheader("🗺️ Regional Music Preferences")
-    
-    # --- TOP ARTIST PER STATE MAP ---
-    st.markdown("### 🏆 Most Popular Artist by State")
-    
-    # Create state mapping for visualization
-    top_artist_state = csv_data['top_artist_per_state'].copy()
-    
-    # Display top states
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**🎯 Artist Champions by State**")
-        display_states = top_artist_state.nlargest(10, 'play_count')
-        for _, row in display_states.iterrows():
-            st.markdown(f"**{row['state']}**: {row['artist']} ({row['play_count']} plays)")
-    
-    with col2:
-        st.markdown("**📊 Regional Diversity**")
-        artist_dominance = top_artist_state['artist'].value_counts()
-        top_10_dominance = artist_dominance.head(10)
-        fig_dominance = px.bar(x=top_10_dominance.index, y=top_10_dominance.values,
-                              title='Artists Leading Multiple States',
-                              color=top_10_dominance.values,
-                              color_continuous_scale='Cividis')
-        fig_dominance.update_layout(
-            xaxis_title='Artist', 
-            yaxis_title='States Led',
-            coloraxis_showscale=False,
-            xaxis=dict(tickangle=45)
-        )
-        fig_dominance.update_traces(
-            hovertemplate='<b>%{x}</b><br>Leading in %{y} states<extra></extra>',
-            texttemplate='%{y}',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=11)
-        )
-        fig_dominance = apply_dark_theme(fig_dominance)
-        st.plotly_chart(fig_dominance, use_container_width=True)
-    
-    st.divider()
-    
-    # --- STATE-SPECIFIC ANALYSIS ---
-    if selected_states:
-        st.markdown(f"### 🎵 Detailed Analysis for Selected States")
+        fig_geo = apply_dark_theme(fig_geo)
+        st.plotly_chart(fig_geo, use_container_width=True)
         
-        # Filter data for selected states
-        filtered_artists = csv_data['top_artists_by_state'][
-            csv_data['top_artists_by_state']['state'].isin(selected_states)
-        ]
-        filtered_songs = csv_data['top_songs_by_state'][
-            csv_data['top_songs_by_state']['state'].isin(selected_states)
-        ]
+        # --- ANIMATED LISTENING HEATMAP ---
+        st.subheader("🔥 Weekly Listening Heatmap Animation")
+        st.markdown("**Interactive geographic heatmap cycling through each day of the week (3 seconds each)**")
+        
+        # Create controls for the heatmap
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            auto_play = st.checkbox("🔄 Auto-cycle through days", value=True)
+        
+        with col2:
+            if not auto_play:
+                manual_day = st.selectbox(
+                    "📅 Select Day",
+                    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    key="manual_day_select"
+                )
+            else:
+                manual_day = None
+        
+        with col3:
+            st.markdown("**📊 Real-time Data**")
+            st.markdown("EventSim GPS coordinates")
+        
+        # Initialize session state for day cycling
+        if 'current_day_index' not in st.session_state:
+            st.session_state.current_day_index = 0
+        if 'last_update' not in st.session_state:
+            st.session_state.last_update = time.time()
+        
+        days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        # Single heatmap display logic
+        if auto_play:
+            # Check if it's time to advance (every 4 seconds)
+            current_time = time.time()
+            if current_time - st.session_state.last_update > 4:
+                st.session_state.current_day_index = (st.session_state.current_day_index + 1) % len(days_of_week)
+                st.session_state.last_update = current_time
+                st.rerun()
+            
+            current_day = days_of_week[st.session_state.current_day_index]
+            display_day = current_day
+            
+            # Progress bar showing which day we're on
+            progress = (st.session_state.current_day_index + 1) / len(days_of_week)
+            st.progress(progress, f"Day {st.session_state.current_day_index + 1} of {len(days_of_week)}: {current_day}")
+            
+            # Add auto-refresh timer
+            st.empty().text(f"⏰ Next update in {4 - int(current_time - st.session_state.last_update)} seconds...")
+            
+        else:
+            # Manual mode - use selected day
+            display_day = manual_day
+        
+        # Display single heatmap using aggregated data
+        st.info(f"🔍 **Currently showing**: {display_day} listening patterns")
+        
+        heatmap = create_listening_heatmap(display_day, csv_data['geographic_analysis'])
+        st_folium(heatmap, width=700, height=450, key=f"heatmap_{display_day}")
+        
+        # Show color mapping for current day
+        st.markdown(f"** Expected Colors for {display_day}:**")
+        color_examples = {
+            'Monday': "Mostly 🔵 Blue and 🟢 Green (low activity)",
+            'Tuesday': "Mix of 🟢 Green and 🟡 Yellow (building up)", 
+            'Wednesday': "Mostly 🟡 Yellow (baseline activity)",
+            'Thursday': "🟡 Yellow and some 🟠 Orange (slightly higher)",
+            'Friday': "Mix of 🟠 Orange and 🔴 Red (weekend buildup)",
+            'Saturday': "Lots of 🔴 Red and 🟣 Purple (peak activity)",
+            'Sunday': "Mix of 🟠 Orange and 🔴 Red (still high)"
+        }
+        st.markdown(color_examples.get(display_day or 'All', "Full spectrum possible"))
+        
+        # Enhanced legend and features
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**🌡️ Heat Intensity Legend:**")
+            st.markdown("• 🟣 **Purple**: Highest activity")
+            st.markdown("• 🔴 **Red**: High activity") 
+            st.markdown("• 🟠 **Orange**: Medium-High activity")
+            st.markdown("• 🟡 **Yellow**: Medium activity")
+            st.markdown("• 🟢 **Green**: Lower activity")
+            st.markdown("• 🔵 **Light Blue**: Lowest activity")
+        
+        with col2:
+            st.markdown("**📊 Animation Features:**")
+            st.markdown("• **Real GPS coordinates** from EventSim")
+            st.markdown("• **3-second intervals** for each day")
+            st.markdown("• **Auto-cycling** through Mon-Sun")
+            st.markdown("• **Manual control** option available")
+            st.markdown("• **City markers** with daily statistics")
+            st.markdown("• **Duration-weighted** heat intensity")
+
+    elif selected_analysis == "👥 Demographics":
+        st.subheader("👥 User Demographics Analysis")
+        
+        # --- AGE DISTRIBUTION ---
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 🎂 Age Distribution")
+            age_df = csv_data['age_distribution']
+            fig_age = px.histogram(age_df, x='age', y='user_count', nbins=20,
+                                  title='User Age Distribution',
+                                  color_discrete_sequence=['#1f77b4'])
+            fig_age.update_layout(xaxis_title='Age', yaxis_title='Number of Users')
+            fig_age.update_traces(
+                hovertemplate='<b>Age %{x}</b><br>%{y} users<extra></extra>',
+                opacity=0.8
+            )
+            fig_age = apply_dark_theme(fig_age)
+            st.plotly_chart(fig_age, use_container_width=True)
+        
+        with col2:
+            st.markdown("### 📊 Generational Breakdown")
+            # Calculate generational groups
+            age_df = csv_data['age_distribution'].copy()
+            def get_generation(age):
+                if age <= 28: return "Gen Z (13-28)"
+                elif age <= 44: return "Millennials (29-44)" 
+                elif age <= 60: return "Gen X (45-60)"
+                else: return "Baby Boomers (61+)"
+            
+            age_df['generation'] = age_df['age'].apply(get_generation)
+            gen_counts = age_df.groupby('generation')['user_count'].sum().reset_index()
+            
+            fig_gen = px.pie(gen_counts, names='generation', values='user_count',
+                            title='Users by Generation',
+                            color_discrete_sequence=px.colors.qualitative.Pastel)
+            fig_gen.update_traces(
+                textposition='inside',
+                textinfo='percent+label',
+                hovertemplate='<b>%{label}</b><br>%{value:,} users<br>%{percent}<extra></extra>',
+                textfont=dict(size=12)
+            )
+            fig_gen = apply_dark_theme(fig_gen)
+            st.plotly_chart(fig_gen, use_container_width=True)
+        
+        # --- SUBSCRIPTION ANALYSIS ---
+        st.markdown("### 💳 Subscription Levels")
+        col1, col2, col3 = st.columns(3)
+        
+        free_users = user_analytics['subscription_levels']['free']
+        paid_users = user_analytics['subscription_levels']['paid']
+        total_users = free_users + paid_users
+        
+        with col1:
+            st.metric("Free Users", f"{free_users:,}", f"{(free_users/total_users)*100:.1f}%")
+        with col2:
+            st.metric("Paid Users", f"{paid_users:,}", f"{(paid_users/total_users)*100:.1f}%")
+        with col3:
+            st.metric("Conversion Rate", f"{(paid_users/total_users)*100:.1f}%")
+        
+        # Subscription engagement comparison
+        engagement_df = csv_data['engagement_by_level']
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            fig_engagement = px.bar(engagement_df, x='subscription_level', y='total_plays',
+                                   title='Total Plays by Subscription Level',
+                                   color='total_plays',
+                                   color_continuous_scale='RdYlBu_r')
+            fig_engagement.update_layout(coloraxis_showscale=False)
+            fig_engagement.update_traces(
+                hovertemplate='<b>%{x}</b><br>%{y:,} total plays<extra></extra>',
+                texttemplate='%{y:,}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=12)
+            )
+            fig_engagement = apply_dark_theme(fig_engagement)
+            st.plotly_chart(fig_engagement, use_container_width=True)
+        
+        with col2:
+            fig_avg_duration = px.bar(engagement_df, x='subscription_level', y='avg_song_duration',
+                                     title='Average Song Duration by Subscription Level',
+                                     color='avg_song_duration',
+                                     color_continuous_scale='Viridis')
+            fig_avg_duration.update_layout(coloraxis_showscale=False)
+            fig_avg_duration.update_traces(
+                hovertemplate='<b>%{x}</b><br>%{y:.1f} seconds avg<extra></extra>',
+                texttemplate='%{y:.1f}s',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=12)
+            )
+            fig_avg_duration = apply_dark_theme(fig_avg_duration)
+            st.plotly_chart(fig_avg_duration, use_container_width=True)
+
+    elif selected_analysis == "🎵 Music Trends":
+        st.subheader("🎵 Music Trends & Preferences")
+        
+        # --- GENRE DEEP DIVE ---
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 🎨 Genre Popularity Rankings")
+            genre_df = pd.DataFrame(content_analytics['genre_popularity'])
+            fig_genre_rank = px.bar(genre_df.head(10), x='genre', y='play_count',
+                                   title='Top 10 Genres by Play Count',
+                                   color='play_count',
+                                   color_continuous_scale='Spectral')
+            fig_genre_rank.update_xaxes(tickangle=45)
+            fig_genre_rank.update_layout(coloraxis_showscale=False)
+            fig_genre_rank.update_traces(
+                hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
+                texttemplate='%{y:,}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=10)
+            )
+            fig_genre_rank = apply_dark_theme(fig_genre_rank)
+            st.plotly_chart(fig_genre_rank, use_container_width=True)
+        
+        with col2:
+            st.markdown("### 🏆 Artist Performance")
+            top_artists_df = pd.DataFrame(content_analytics['top_artists'][:15])
+            fig_artist_perf = px.scatter(top_artists_df, x='artist', y='play_count',
+                                       size='play_count', 
+                                       title='Artist Performance Bubble Chart',
+                                       color='play_count',
+                                       color_continuous_scale='Plasma')
+            fig_artist_perf.update_xaxes(tickangle=45)
+            fig_artist_perf.update_layout(coloraxis_showscale=False)
+            fig_artist_perf.update_traces(
+                hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>'
+            )
+            fig_artist_perf = apply_dark_theme(fig_artist_perf)
+            st.plotly_chart(fig_artist_perf, use_container_width=True)
+        
+        # --- SONG ANALYSIS ---
+        st.markdown("### 🎵 Song Performance Analysis")
+        top_songs_df = pd.DataFrame(content_analytics['top_songs'][:20])
+        
+        # Create combined artist-song label for better visualization
+        top_songs_df['song_label'] = top_songs_df['artist'] + ' - ' + top_songs_df['song'].str[:30] + '...'
+        
+        fig_songs_detailed = px.bar(top_songs_df, x='play_count', y='song_label', orientation='h',
+                                   title='Top 20 Songs with Artist Names',
+                                   color='play_count',
+                                   color_continuous_scale='Viridis')
+        fig_songs_detailed.update_layout(
+            yaxis={'categoryorder':'total ascending'}, 
+            height=700,
+            coloraxis_showscale=False,
+            xaxis_title='Number of Plays',
+            yaxis_title=None
+        )
+        fig_songs_detailed.update_traces(
+            hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
+            texttemplate='%{x:,}',
+            textposition='outside',
+            textfont=dict(color='#fafafa', size=9)
+        )
+        fig_songs_detailed = apply_dark_theme(fig_songs_detailed)
+        st.plotly_chart(fig_songs_detailed, use_container_width=True)
+
+    elif selected_analysis == "📊 Engagement Metrics":
+        st.subheader("📊 User Engagement & Activity Metrics")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("**🎤 Top Artists in Selected States**")
-            # Show top 5 artists per selected state
-            for state in selected_states[:5]:  # Limit to first 5 states for readability
-                state_artists = filtered_artists[filtered_artists['state'] == state].head(3)
-                st.markdown(f"**{state}:**")
-                for _, row in state_artists.iterrows():
-                    st.markdown(f"  {row['rank']}. {row['artist']} ({row['play_count']} plays)")
+            st.markdown("### 📅 Daily Activity Patterns")
+            daily_df = pd.DataFrame(user_analytics['daily_active_users'])
+            daily_df['date'] = pd.to_datetime(daily_df['date'])
+            daily_df['weekday'] = daily_df['date'].dt.day_name()
+            
+            # Calculate average by weekday
+            weekday_avg = daily_df.groupby('weekday')['daily_active_users'].mean().reset_index()
+            weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            weekday_avg['weekday'] = pd.Categorical(weekday_avg['weekday'], categories=weekday_order, ordered=True)
+            weekday_avg = weekday_avg.sort_values('weekday')
+            
+            fig_weekday = px.bar(weekday_avg, x='weekday', y='daily_active_users',
+                               title='Average Daily Active Users by Weekday',
+                               color='daily_active_users',
+                               color_continuous_scale='Blues')
+            fig_weekday.update_xaxes(tickangle=45)
+            fig_weekday.update_layout(coloraxis_showscale=False)
+            fig_weekday.update_traces(
+                hovertemplate='<b>%{x}</b><br>%{y:,.0f} avg users<extra></extra>',
+                texttemplate='%{y:,.0f}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=11)
+            )
+            fig_weekday = apply_dark_theme(fig_weekday)
+            st.plotly_chart(fig_weekday, use_container_width=True)
         
         with col2:
-            st.markdown("**🎵 Top Songs in Selected States**")
-            for state in selected_states[:5]:
-                state_songs = filtered_songs[filtered_songs['state'] == state].head(3)
-                st.markdown(f"**{state}:**")
-                for _, row in state_songs.iterrows():
-                    st.markdown(f"  {row['rank']}. {row['song']} by {row['artist']}")
-    
-    # --- GEOGRAPHIC CONCENTRATION ---
-    st.subheader("📍 Geographic Activity Hotspots")
-    geo_df = csv_data['geographic_analysis'].head(15)
-    fig_geo = px.bar(geo_df, x='total_plays', y='city', orientation='h',
-                    title='Top 15 Cities by Total Plays',
-                    hover_data=['state', 'unique_users'],
-                    color='total_plays',
-                    color_continuous_scale='Inferno')
-    fig_geo.update_layout(
-        yaxis={'categoryorder':'total ascending'},
-        xaxis_title='Total Plays',
-        yaxis_title=None,
-        coloraxis_showscale=False
-    )
-    fig_geo.update_traces(
-        hovertemplate='<b>%{y}, %{customdata[0]}</b><br>%{x:,} total plays<br>%{customdata[1]} unique users<extra></extra>',
-        texttemplate='%{x:,}',
-        textposition='outside',
-        textfont=dict(color='#fafafa', size=10)
-    )
-    fig_geo = apply_dark_theme(fig_geo)
-    st.plotly_chart(fig_geo, use_container_width=True)
-    
-    # --- ANIMATED LISTENING HEATMAP ---
-    st.subheader("🔥 Weekly Listening Heatmap Animation")
-    st.markdown("**Interactive geographic heatmap cycling through each day of the week (3 seconds each)**")
-    
-    # Create controls for the heatmap
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        auto_play = st.checkbox("🔄 Auto-cycle through days", value=True)
-    
-    with col2:
-        if not auto_play:
-            manual_day = st.selectbox(
-                "📅 Select Day",
-                ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                key="manual_day_select"
+            st.markdown("### 🕐 Hourly Usage Patterns")
+            hourly_df = csv_data['hourly_patterns']
+            fig_hourly_detailed = px.line(hourly_df, x='hour', y='total_plays', markers=True,
+                                        title='Listening Activity Throughout the Day',
+                                        line_shape='spline')
+            fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays')
+            fig_hourly_detailed.update_traces(
+                line=dict(color='#ff7f0e', width=3),
+                marker=dict(size=8, color='#1f77b4'),
+                hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>'
             )
-        else:
-            manual_day = None
-    
-    with col3:
-        st.markdown("**📊 Real-time Data**")
-        st.markdown("EventSim GPS coordinates")
-    
-    # Initialize session state for day cycling
-    if 'current_day_index' not in st.session_state:
-        st.session_state.current_day_index = 0
-    if 'last_update' not in st.session_state:
-        st.session_state.last_update = time.time()
-    
-    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    
-    # Single heatmap display logic
-    if auto_play:
-        # Check if it's time to advance (every 4 seconds)
-        current_time = time.time()
-        if current_time - st.session_state.last_update > 4:
-            st.session_state.current_day_index = (st.session_state.current_day_index + 1) % len(days_of_week)
-            st.session_state.last_update = current_time
-            st.rerun()
+            fig_hourly_detailed = apply_dark_theme(fig_hourly_detailed)
+            st.plotly_chart(fig_hourly_detailed, use_container_width=True)
         
-        current_day = days_of_week[st.session_state.current_day_index]
-        display_day = current_day
+        # --- SESSION METRICS ---
+        st.markdown("### 📊 Session & Engagement Metrics")
         
-        # Progress bar showing which day we're on
-        progress = (st.session_state.current_day_index + 1) / len(days_of_week)
-        st.progress(progress, f"Day {st.session_state.current_day_index + 1} of {len(days_of_week)}: {current_day}")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Avg Songs per Session", f"{content_analytics['average_plays_per_session']:.1f}")
         
-        # Add auto-refresh timer
-        st.empty().text(f"⏰ Next update in {4 - int(current_time - st.session_state.last_update)} seconds...")
+        # Calculate peak hour
+        hourly_data = csv_data['hourly_patterns']
+        max_plays = hourly_data['total_plays'].max()
+        peak_hour_row = hourly_data[hourly_data['total_plays'] == max_plays].iloc[0]
+        with col2:
+            st.metric("Peak Hour", f"{int(peak_hour_row['hour']):02d}:00", f"{int(peak_hour_row['total_plays']):,} plays")
         
-    else:
-        # Manual mode - use selected day
-        display_day = manual_day
-    
-    # Display single heatmap using aggregated data
-    st.info(f"🔍 **Currently showing**: {display_day} listening patterns")
-    
-    heatmap = create_listening_heatmap(display_day, csv_data['geographic_analysis'])
-    st_folium(heatmap, width=700, height=450, key=f"heatmap_{display_day}")
-    
-    # Show color mapping for current day
-    st.markdown(f"** Expected Colors for {display_day}:**")
-    color_examples = {
-        'Monday': "Mostly 🔵 Blue and 🟢 Green (low activity)",
-        'Tuesday': "Mix of 🟢 Green and 🟡 Yellow (building up)", 
-        'Wednesday': "Mostly 🟡 Yellow (baseline activity)",
-        'Thursday': "🟡 Yellow and some 🟠 Orange (slightly higher)",
-        'Friday': "Mix of 🟠 Orange and 🔴 Red (weekend buildup)",
-        'Saturday': "Lots of 🔴 Red and 🟣 Purple (peak activity)",
-        'Sunday': "Mix of 🟠 Orange and 🔴 Red (still high)"
-    }
-    st.markdown(color_examples.get(display_day or 'All', "Full spectrum possible"))
-    
-    # Enhanced legend and features
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**🌡️ Heat Intensity Legend:**")
-        st.markdown("• 🟣 **Purple**: Highest activity")
-        st.markdown("• 🔴 **Red**: High activity") 
-        st.markdown("• 🟠 **Orange**: Medium-High activity")
-        st.markdown("• 🟡 **Yellow**: Medium activity")
-        st.markdown("• 🟢 **Green**: Lower activity")
-        st.markdown("• 🔵 **Light Blue**: Lowest activity")
-    
-    with col2:
-        st.markdown("**📊 Animation Features:**")
-        st.markdown("• **Real GPS coordinates** from EventSim")
-        st.markdown("• **3-second intervals** for each day")
-        st.markdown("• **Auto-cycling** through Mon-Sun")
-        st.markdown("• **Manual control** option available")
-        st.markdown("• **City markers** with daily statistics")
-        st.markdown("• **Duration-weighted** heat intensity")
-
-       
-    
-    
-
-elif selected_analysis == "👥 Demographics":
-    st.subheader("👥 User Demographics Analysis")
-    
-    # --- AGE DISTRIBUTION ---
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🎂 Age Distribution")
-        age_df = csv_data['age_distribution']
-        fig_age = px.histogram(age_df, x='age', y='user_count', nbins=20,
-                              title='User Age Distribution',
-                              color_discrete_sequence=['#1f77b4'])
-        fig_age.update_layout(xaxis_title='Age', yaxis_title='Number of Users')
-        fig_age.update_traces(
-            hovertemplate='<b>Age %{x}</b><br>%{y} users<extra></extra>',
-            opacity=0.8
-        )
-        fig_age = apply_dark_theme(fig_age)
-        st.plotly_chart(fig_age, use_container_width=True)
-    
-    with col2:
-        st.markdown("### 📊 Generational Breakdown")
-        # Calculate generational groups
-        age_df = csv_data['age_distribution'].copy()
-        def get_generation(age):
-            if age <= 28: return "Gen Z (13-28)"
-            elif age <= 44: return "Millennials (29-44)" 
-            elif age <= 60: return "Gen X (45-60)"
-            else: return "Baby Boomers (61+)"
-        
-        age_df['generation'] = age_df['age'].apply(get_generation)
-        gen_counts = age_df.groupby('generation')['user_count'].sum().reset_index()
-        
-        fig_gen = px.pie(gen_counts, names='generation', values='user_count',
-                        title='Users by Generation',
-                        color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_gen.update_traces(
-            textposition='inside',
-            textinfo='percent+label',
-            hovertemplate='<b>%{label}</b><br>%{value:,} users<br>%{percent}<extra></extra>',
-            textfont=dict(size=12)
-        )
-        fig_gen = apply_dark_theme(fig_gen)
-        st.plotly_chart(fig_gen, use_container_width=True)
-    
-    # --- SUBSCRIPTION ANALYSIS ---
-    st.markdown("### 💳 Subscription Levels")
-    col1, col2, col3 = st.columns(3)
-    
-    free_users = user_analytics['subscription_levels']['free']
-    paid_users = user_analytics['subscription_levels']['paid']
-    total_users = free_users + paid_users
-    
-    with col1:
-        st.metric("Free Users", f"{free_users:,}", f"{(free_users/total_users)*100:.1f}%")
-    with col2:
-        st.metric("Paid Users", f"{paid_users:,}", f"{(paid_users/total_users)*100:.1f}%")
-    with col3:
-        st.metric("Conversion Rate", f"{(paid_users/total_users)*100:.1f}%")
-    
-    # Subscription engagement comparison
-    engagement_df = csv_data['engagement_by_level']
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        fig_engagement = px.bar(engagement_df, x='subscription_level', y='total_plays',
-                               title='Total Plays by Subscription Level',
-                               color='total_plays',
-                               color_continuous_scale='RdYlBu_r')
-        fig_engagement.update_layout(coloraxis_showscale=False)
-        fig_engagement.update_traces(
-            hovertemplate='<b>%{x}</b><br>%{y:,} total plays<extra></extra>',
-            texttemplate='%{y:,}',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=12)
-        )
-        fig_engagement = apply_dark_theme(fig_engagement)
-        st.plotly_chart(fig_engagement, use_container_width=True)
-    
-    with col2:
-        fig_avg_duration = px.bar(engagement_df, x='subscription_level', y='avg_song_duration',
-                                 title='Average Song Duration by Subscription Level',
-                                 color='avg_song_duration',
-                                 color_continuous_scale='Viridis')
-        fig_avg_duration.update_layout(coloraxis_showscale=False)
-        fig_avg_duration.update_traces(
-            hovertemplate='<b>%{x}</b><br>%{y:.1f} seconds avg<extra></extra>',
-            texttemplate='%{y:.1f}s',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=12)
-        )
-        fig_avg_duration = apply_dark_theme(fig_avg_duration)
-        st.plotly_chart(fig_avg_duration, use_container_width=True)
-
-elif selected_analysis == "🎵 Music Trends":
-    st.subheader("🎵 Music Trends & Preferences")
-    
-    # --- GENRE DEEP DIVE ---
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🎨 Genre Popularity Rankings")
-        genre_df = pd.DataFrame(content_analytics['genre_popularity'])
-        fig_genre_rank = px.bar(genre_df.head(10), x='genre', y='play_count',
-                               title='Top 10 Genres by Play Count',
-                               color='play_count',
-                               color_continuous_scale='Spectral')
-        fig_genre_rank.update_xaxes(tickangle=45)
-        fig_genre_rank.update_layout(coloraxis_showscale=False)
-        fig_genre_rank.update_traces(
-            hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
-            texttemplate='%{y:,}',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=10)
-        )
-        fig_genre_rank = apply_dark_theme(fig_genre_rank)
-        st.plotly_chart(fig_genre_rank, use_container_width=True)
-    
-    with col2:
-        st.markdown("### 🏆 Artist Performance")
-        top_artists_df = pd.DataFrame(content_analytics['top_artists'][:15])
-        fig_artist_perf = px.scatter(top_artists_df, x='artist', y='play_count',
-                                   size='play_count', 
-                                   title='Artist Performance Bubble Chart',
-                                   color='play_count',
-                                   color_continuous_scale='Plasma')
-        fig_artist_perf.update_xaxes(tickangle=45)
-        fig_artist_perf.update_layout(coloraxis_showscale=False)
-        fig_artist_perf.update_traces(
-            hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>'
-        )
-        fig_artist_perf = apply_dark_theme(fig_artist_perf)
-        st.plotly_chart(fig_artist_perf, use_container_width=True)
-    
-    # --- SONG ANALYSIS ---
-    st.markdown("### 🎵 Song Performance Analysis")
-    top_songs_df = pd.DataFrame(content_analytics['top_songs'][:20])
-    
-    # Create combined artist-song label for better visualization
-    top_songs_df['song_label'] = top_songs_df['artist'] + ' - ' + top_songs_df['song'].str[:30] + '...'
-    
-    fig_songs_detailed = px.bar(top_songs_df, x='play_count', y='song_label', orientation='h',
-                               title='Top 20 Songs with Artist Names',
-                               color='play_count',
-                               color_continuous_scale='Viridis')
-    fig_songs_detailed.update_layout(
-        yaxis={'categoryorder':'total ascending'}, 
-        height=700,
-        coloraxis_showscale=False,
-        xaxis_title='Number of Plays',
-        yaxis_title=None
-    )
-    fig_songs_detailed.update_traces(
-        hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
-        texttemplate='%{x:,}',
-        textposition='outside',
-        textfont=dict(color='#fafafa', size=9)
-    )
-    fig_songs_detailed = apply_dark_theme(fig_songs_detailed)
-    st.plotly_chart(fig_songs_detailed, use_container_width=True)
-
-elif selected_analysis == "📊 Engagement Metrics":
-    st.subheader("📊 User Engagement & Activity Metrics")
-    
-    # --- ACTIVITY PATTERNS ---
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 📅 Daily Activity Patterns")
+        # Calculate most active day
         daily_df = pd.DataFrame(user_analytics['daily_active_users'])
         daily_df['date'] = pd.to_datetime(daily_df['date'])
-        daily_df['weekday'] = daily_df['date'].dt.day_name()
-        
-        # Calculate average by weekday
-        weekday_avg = daily_df.groupby('weekday')['daily_active_users'].mean().reset_index()
-        weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        weekday_avg['weekday'] = pd.Categorical(weekday_avg['weekday'], categories=weekday_order, ordered=True)
-        weekday_avg = weekday_avg.sort_values('weekday')
-        
-        fig_weekday = px.bar(weekday_avg, x='weekday', y='daily_active_users',
-                           title='Average Daily Active Users by Weekday',
-                           color='daily_active_users',
-                           color_continuous_scale='Blues')
-        fig_weekday.update_xaxes(tickangle=45)
-        fig_weekday.update_layout(coloraxis_showscale=False)
-        fig_weekday.update_traces(
-            hovertemplate='<b>%{x}</b><br>%{y:,.0f} avg users<extra></extra>',
-            texttemplate='%{y:,.0f}',
-            textposition='outside',
-            textfont=dict(color='#fafafa', size=11)
-        )
-        fig_weekday = apply_dark_theme(fig_weekday)
-        st.plotly_chart(fig_weekday, use_container_width=True)
-    
-    with col2:
-        st.markdown("### 🕐 Hourly Usage Patterns")
-        hourly_df = csv_data['hourly_patterns']
-        fig_hourly_detailed = px.line(hourly_df, x='hour', y='total_plays', markers=True,
-                                    title='Listening Activity Throughout the Day',
-                                    line_shape='spline')
-        fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays')
-        fig_hourly_detailed.update_traces(
-            line=dict(color='#ff7f0e', width=3),
-            marker=dict(size=8, color='#1f77b4'),
-            hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>'
-        )
-        fig_hourly_detailed = apply_dark_theme(fig_hourly_detailed)
-        st.plotly_chart(fig_hourly_detailed, use_container_width=True)
-    
-    # --- SESSION METRICS ---
-    st.markdown("### 📊 Session & Engagement Metrics")
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Avg Songs per Session", f"{content_analytics['average_plays_per_session']:.1f}")
-    
-    # Calculate peak hour
-    hourly_data = csv_data['hourly_patterns']
-    max_plays = hourly_data['total_plays'].max()
-    peak_hour_row = hourly_data[hourly_data['total_plays'] == max_plays].iloc[0]
-    with col2:
-        st.metric("Peak Hour", f"{int(peak_hour_row['hour']):02d}:00", f"{int(peak_hour_row['total_plays']):,} plays")
-    
-    # Calculate most active day
-    daily_df = pd.DataFrame(user_analytics['daily_active_users'])
-    daily_df['date'] = pd.to_datetime(daily_df['date'])
-    max_users = daily_df['daily_active_users'].max()
-    most_active_row = daily_df[daily_df['daily_active_users'] == max_users].iloc[0]
-    with col3:
-        st.metric("Most Active Day", most_active_row['date'].strftime('%m/%d'), f"{int(most_active_row['daily_active_users']):,} users")
+        max_users = daily_df['daily_active_users'].max()
+        most_active_row = daily_df[daily_df['daily_active_users'] == max_users].iloc[0]
+        with col3:
+            st.metric("Most Active Day", most_active_row['date'].strftime('%m/%d'), f"{int(most_active_row['daily_active_users']):,} users")
 
-# --- AI INSIGHTS BOT ---
+# --- ENHANCED AI INSIGHTS BOT ---
 st.divider()
-st.subheader("🤖 AI Music Insights Assistant")
-st.markdown("*Ask questions about your data or get instant insights!*")
+st.subheader("🤖 Enhanced AI Music Analytics Assistant")
+st.markdown("*Ask natural language questions about user behavior, sessions, devices, and more using both processed and raw event data!*")
 
-# Initialize bot and chat history
+# Initialize enhanced bot and chat history
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'bot' not in st.session_state:
-    st.session_state.bot = DataInsightBot()
+    # Initialize enhanced bot with both CSV and raw data
+    raw_data_paths = {
+        'listen_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/listen_events_head.jsonl',
+        'auth_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/auth_events_head.jsonl',
+        'page_view_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/page_view_events_head.jsonl',
+        'status_change_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/status_change_events_head.jsonl'
+    }
+    st.session_state.bot = DataInsightBot(csv_data, raw_data_paths)
 
-# Create data context for AI
-data_context = {
-    'top_artists': csv_data['top_artists'],
-    'top_songs': csv_data['top_songs'],
-    'genre_popularity': csv_data['genre_popularity'],
-    'geographic_analysis': csv_data['geographic_analysis'],
-    'hourly_patterns': csv_data['hourly_patterns'],
-    'age_distribution': csv_data['age_distribution']
-}
+# AI Data Source Summary in sidebar
+st.sidebar.divider()
+st.sidebar.markdown("**🔗 AI Data Sources**")
+if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
+    for data_type, df in st.session_state.bot.raw_data.items():
+        if not df.empty:
+            st.sidebar.metric(f"{data_type.replace('_', ' ').title()}", f"{len(df):,} events")
+else:
+    st.sidebar.info("Raw event data loading...")
 
-# AI Chat Interface
-col1, col2, col3 = st.columns([3, 1, 1])
+# Display AI capabilities and data summary
+col1, col2 = st.columns([2, 1])
 
 with col1:
-    user_input = st.text_input("💬 Ask about your music data:", 
-                             placeholder="e.g., What trends do you see in the current data?",
-                             key="user_question")
+    st.markdown("### 🎯 AI Capabilities")
+    st.markdown("""
+    **Enhanced Analytics Available:**
+    - 📊 Session analysis and user journey insights
+    - 📱 Device usage patterns and platform analytics  
+    - 🔐 Authentication behavior and login trends
+    - 📈 Advanced engagement metrics and retention
+    - 🎵 Deep music listening patterns and preferences
+    - 🌐 Geographic and temporal behavior analysis
+    """)
 
 with col2:
-    if st.button("🎯 Ask AI", type="primary"):
-        if user_input:
+    if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
+        st.markdown("### 📊 Data Summary")
+        total_events = sum(len(df) for df in st.session_state.bot.raw_data.values() if not df.empty)
+        st.metric("Total Raw Events", f"{total_events:,}")
+        st.metric("Data Sources", f"CSV + {len(st.session_state.bot.raw_data)} JSONL")
+        
+        # Generate and display enhanced insights
+        with st.spinner("🤖 Generating enhanced insights..."):
+            enhanced_insights = st.session_state.bot.generate_enhanced_insights()
+            st.markdown("**🚀 Smart Insights:**")
+            for insight in enhanced_insights[:3]:
+                st.markdown(f"• {insight}")
+
+# Enhanced conversational interface
+st.markdown("### 💬 Conversational Analytics")
+
+# Example questions specific to enhanced capabilities
+st.markdown("**💡 Try asking about:**")
+example_questions = [
+    "What are the user session patterns?",
+    "How do authentication events correlate with listening?", 
+    "What device types are most popular?",
+    "Show me user engagement trends",
+    "What are the peak usage hours across platforms?",
+    "How do page views relate to music consumption?"
+]
+
+cols = st.columns(3)
+for i, question in enumerate(example_questions):
+    col = cols[i % 3]
+    with col:
+        if st.button(f"📝 {question}", key=f"example_{i}", help="Click to ask"):
+            st.session_state.chat_history.append(("user", question))
             with st.spinner("🤖 Analyzing your data..."):
-                response = st.session_state.bot.answer_question(user_input, data_context)
-                st.session_state.chat_history.append(("user", user_input))
+                response = st.session_state.bot.answer_question(question)
                 st.session_state.chat_history.append(("bot", response))
                 st.rerun()
 
-with col3:
-    if st.button("🔄 Random Insight"):
-        with st.spinner("🤖 Finding insights..."):
-            response = st.session_state.bot.get_random_insight(data_context)
-            st.session_state.chat_history.append(("user", "Give me a random insight"))
-            st.session_state.chat_history.append(("bot", response))
-            st.rerun()
+# Main chat interface
+col1, col2 = st.columns([4, 1])
 
-# Display chat history in a nice format
+with col1:
+    user_input = st.text_input("🗣️ Ask anything about your data:", 
+                             placeholder="e.g., What patterns do you see in user sessions?",
+                             key="user_question")
+
+with col2:
+    if st.button("� Ask AI", type="primary"):
+        if user_input:
+            st.session_state.chat_history.append(("user", user_input))
+            with st.spinner("🤖 Processing with enhanced analytics..."):
+                response = st.session_state.bot.answer_question(user_input)
+                st.session_state.chat_history.append(("bot", response))
+                st.rerun()
+
+# Display enhanced chat history
 if st.session_state.chat_history:
-    st.markdown("### 💬 Conversation")
+    st.markdown("### 💬 Conversation History")
     
-    # Show last 6 messages (3 exchanges)
-    recent_messages = st.session_state.chat_history[-6:]
+    # Show recent messages with enhanced styling
+    recent_messages = st.session_state.chat_history[-8:]  # Show more messages
     
     for i, (sender, message) in enumerate(recent_messages):
         if sender == "user":
             st.markdown(f"""
-            <div style="background-color: #0e1117; padding: 10px; border-radius: 10px; margin: 5px 0; border-left: 3px solid #1f77b4;">
+            <div style="background-color: #0e1117; padding: 12px; border-radius: 10px; margin: 8px 0; border-left: 4px solid #1f77b4;">
                 <strong>🧑‍💻 You:</strong> {message}
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div style="background-color: #262730; padding: 10px; border-radius: 10px; margin: 5px 0; border-left: 3px solid #ff7f0e;">
-                <strong>🤖 AI Assistant:</strong><br>{message}
+            <div style="background-color: #262730; padding: 12px; border-radius: 10px; margin: 8px 0; border-left: 4px solid #ff7f0e;">
+                <strong>🤖 Enhanced AI:</strong><br>{message}
             </div>
             """, unsafe_allow_html=True)
     
-    # Clear chat button
-    if st.button("🗑️ Clear Chat"):
-        st.session_state.chat_history = []
-        st.rerun()
+    # Enhanced chat controls
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("🗑️ Clear Chat"):
+            st.session_state.chat_history = []
+            st.rerun()
+    with col2:
+        if st.button("� Generate Summary"):
+            summary = st.session_state.bot.generate_conversation_summary(st.session_state.chat_history)
+            st.session_state.chat_history.append(("bot", f"📋 **Conversation Summary:**\n{summary}"))
+            st.rerun()
+    with col3:
+        if st.button("🎯 Smart Suggestion"):
+            suggestion = st.session_state.bot.get_smart_suggestion(st.session_state.chat_history)
+            st.session_state.chat_history.append(("bot", f"💡 **Smart Suggestion:**\n{suggestion}"))
+            st.rerun()
 
-# Suggested questions in a grid
-st.markdown("### 💡 Suggested Questions")
-suggested_questions = st.session_state.bot.get_suggested_questions()
-
-# Create a 2x4 grid for suggested questions
-cols = st.columns(2)
-for i, question in enumerate(suggested_questions):
-    col = cols[i % 2]
-    with col:
-        if st.button(question, key=f"suggest_{i}", help="Click to ask this question"):
-            with st.spinner("🤖 Analyzing..."):
-                response = st.session_state.bot.answer_question(question, data_context)
-                st.session_state.chat_history.append(("user", question))
-                st.session_state.chat_history.append(("bot", response))
-                st.rerun()
-
-# Auto-generated insights on page load
+# Welcome message for new users
 if not st.session_state.chat_history:
-    st.markdown("### 🚀 Quick Insights")
-    st.info("👋 Welcome! I'm your AI music data assistant. Here are some quick insights to get you started:")
+    st.markdown("### 🌟 Welcome to Enhanced AI Analytics!")
+    st.info("👋 I'm your enhanced AI assistant with access to both processed CSV data and raw EventSim JSONL files. I can provide deep insights about user sessions, device usage, authentication patterns, and much more!")
     
-    insights = st.session_state.bot.generate_smart_insights(data_context)
-    for insight in insights[:3]:
-        st.markdown(f"• {insight}")
+    # Show sample capabilities
+    if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
+        st.markdown("**🔥 Ready to analyze:**")
+        for data_type, df in st.session_state.bot.raw_data.items():
+            if not df.empty:
+                st.markdown(f"• **{data_type.replace('_', ' ').title()}**: {len(df):,} events ready for analysis")
     
-    st.markdown("*Ask me anything about your music data above!*")
+    st.markdown("*Start by asking a question above or clicking one of the example questions!*")
 
 # --- FOOTER ---
 st.divider()

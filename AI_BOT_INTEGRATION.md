@@ -14,7 +14,7 @@ Adding an AI bot to provide real-time insights about your music streaming data w
 1. **Install dependencies**:
 ```bash
 pip install openai streamlit-chat
-```
+?wd ```
 
 2. **Add to requirements.txt**:
 ```
@@ -25,6 +25,10 @@ streamlit-chat>=0.1.1
 3. **Create AI bot module** (`static-dashboard/ai_bot.py`):
 ```python
 import openai
+dsazdxcv ,
+\]
+[k 
+
 import pandas as pd
 import json
 from typing import Dict, Any

@@ -11,10 +11,10 @@ random.seed(42)
 print("Loading data files...")
 
 # Load JSON files from sample directory
-auth = pd.read_json("sample/auth_events_head.jsonl", lines=True)
-listen = pd.read_json("sample/listen_events_head.jsonl", lines=True)
-page = pd.read_json("sample/page_view_events_head.jsonl", lines=True)
-status = pd.read_json("sample/status_change_events_head.jsonl", lines=True)
+auth = pd.read_json("data/sample/auth_events_head.jsonl", lines=True)
+listen = pd.read_json("data/sample/listen_events_head.jsonl", lines=True)
+page = pd.read_json("data/sample/page_view_events_head.jsonl", lines=True)
+status = pd.read_json("data/sample/status_change_events_head.jsonl", lines=True)
 
 print(f"Loaded {len(auth)} auth events, {len(listen)} listen events, {len(page)} page events, {len(status)} status events")
 
