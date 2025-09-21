@@ -323,5 +323,72 @@ def process_songs_without_artists(batch_size=1000):
         session.close()
 
 if __name__ == "__main__":
-    # Scale up to process all remaining songs in batches
-    process_songs_with_ai(batch_size=1000)  # Process 1000 songs at a time
+    # Process ALL songs in the database
+    total_processed = 0
+    batch_size = 1000
+    
+    while True:
+        # Count songs without genres before processing
+        session = SessionLocal()
+        try:
+            count_query = session.execute(text('''
+                SELECT COUNT(*)
+                FROM dim_song ds
+                JOIN dim_song_artist dsa ON ds.song_id = dsa.song_id
+                JOIN dim_artist da ON dsa.artist_id = da.artist_id
+                LEFT JOIN dim_song_genre dsg ON ds.song_id = dsg.song_id
+                WHERE dsg.song_id IS NULL
+            ''')).scalar()
+            
+            print(f"Songs remaining to process: {count_query}")
+            
+            if count_query == 0:
+                print("No more songs with artists to process!")
+                break
+                
+        finally:
+            session.close()
+        
+        # Process next batch
+        print(f"\n--- Processing batch {total_processed // batch_size + 1} ---")
+        process_songs_with_ai(batch_size=batch_size)
+        total_processed += min(batch_size, count_query)
+        
+        print(f"Total songs processed so far: {total_processed}")
+    
+    # Also process songs without artists
+    print("\n--- Now processing songs without artist relationships ---")
+    total_no_artist = 0
+    
+    while True:
+        # Count songs without artists and without genres
+        session = SessionLocal()
+        try:
+            count_query = session.execute(text('''
+                SELECT COUNT(*)
+                FROM dim_song ds
+                LEFT JOIN dim_song_artist dsa ON ds.song_id = dsa.song_id
+                LEFT JOIN dim_song_genre dsg ON ds.song_id = dsg.song_id
+                WHERE dsa.song_id IS NULL AND dsg.song_id IS NULL
+            ''')).scalar()
+            
+            print(f"Songs without artists remaining to process: {count_query}")
+            
+            if count_query == 0:
+                print("No more songs without artists to process!")
+                break
+                
+        finally:
+            session.close()
+        
+        # Process next batch of songs without artists
+        print(f"\n--- Processing no-artist batch {total_no_artist // batch_size + 1} ---")
+        process_songs_without_artists(batch_size=batch_size)
+        total_no_artist += min(batch_size, count_query)
+        
+        print(f"Total songs without artists processed: {total_no_artist}")
+    
+    print(f"\n🎉 COMPLETED! Total songs processed:")
+    print(f"  - With artists: {total_processed}")
+    print(f"  - Without artists: {total_no_artist}")
+    print(f"  - Grand total: {total_processed + total_no_artist}")
