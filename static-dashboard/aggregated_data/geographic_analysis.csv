@@ -1,21 +1,21 @@
-state,city,unique_users,total_plays
-CA,Los Angeles,16,512
-TX,Fort Worth,11,499
-CA,Lodi,2,474
-CA,Moreno Valley,3,474
-IL,Chicago,30,455
-FL,Lake City,1,374
-TX,Plano,3,369
-OH,Masury,1,363
-TX,Royse City,1,361
-AL,Calera,1,352
-NY,New York City,17,339
-CA,Oakland,6,338
-CA,Huntington Beach,2,337
-NY,Yorktown Heights,1,336
-TX,Allen,2,317
-VA,Gainesville,1,316
-TN,Smyrna,1,314
-GA,Pelham,1,310
-NC,Greensboro,5,285
-GA,Hephzibah,1,274
+state,total_plays,cities_count
+CA,1375197,228
+TX,850516,154
+FL,679088,106
+NY,651757,135
+IL,516412,121
+OH,458111,98
+GA,416776,84
+VA,387557,74
+NC,348008,90
+PA,336565,106
+NJ,304737,89
+MI,303718,80
+IN,233935,68
+AZ,224336,36
+WA,218817,48
+AL,211399,54
+TN,209173,60
+WI,194493,52
+MA,177280,61
+MO,168677,45

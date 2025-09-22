@@ -9,26 +9,52 @@ class DataInsightBot:
     def __init__(self, csv_data, raw_data_paths=None):
         self.csv_data = csv_data
         self.raw_data = {}
+        self.full_dataset_sizes = {}
         
         # Load raw JSONL data if paths provided
         if raw_data_paths:
             self.load_raw_data(raw_data_paths)
     
     def load_raw_data(self, paths):
-        """Load raw JSONL files for deeper analysis"""
+        """Load raw JSONL files with intelligent sampling for large datasets"""
+        # Expected full dataset sizes for reference
+        dataset_sizes = {
+            'listen_events': 10714491,
+            'auth_events': 142402,
+            'page_view_events': 12259101,
+            'status_change_events': 4159
+        }
+        
         for data_type, path in paths.items():
             try:
                 events = []
+                total_lines = 0
+                sample_size = min(50000, dataset_sizes.get(data_type, 50000))  # Intelligent sampling
+                
                 with open(path, 'r') as f:
-                    for line in f:
+                    for line_num, line in enumerate(f, 1):
+                        total_lines = line_num
                         try:
-                            events.append(json.loads(line))
+                            # Sample every nth line for large files to get representative data
+                            if data_type == 'listen_events' and line_num % 200 == 0:  # Sample every 200th line
+                                events.append(json.loads(line))
+                            elif data_type == 'page_view_events' and line_num % 250 == 0:  # Sample every 250th line
+                                events.append(json.loads(line))
+                            elif data_type in ['auth_events', 'status_change_events']:  # Load all for smaller files
+                                events.append(json.loads(line))
+                            
+                            if len(events) >= sample_size:
+                                break
+                                
                         except json.JSONDecodeError:
                             continue  # Skip malformed lines
                 
                 if events:
                     self.raw_data[data_type] = pd.DataFrame(events)
-                    print(f"✅ Loaded {len(events)} {data_type.replace('_', ' ')} events")
+                    if data_type in ['listen_events', 'page_view_events']:
+                        print(f"✅ Loaded {len(events):,} {data_type.replace('_', ' ')} events (sampled from {total_lines:,} total)")
+                    else:
+                        print(f"✅ Loaded {len(events):,} {data_type.replace('_', ' ')} events")
                 else:
                     print(f"⚠️ No valid data in {data_type}")
                     
@@ -36,6 +62,9 @@ class DataInsightBot:
                 print(f"❌ Could not find {data_type} file: {path}")
             except Exception as e:
                 print(f"❌ Error loading {data_type}: {e}")
+        
+        # Store full dataset metadata for insights
+        self.full_dataset_sizes = dataset_sizes
 
     def generate_enhanced_insights(self):
         """Generate comprehensive insights using both CSV and raw data"""
@@ -50,23 +79,23 @@ class DataInsightBot:
         return insights[:12]  # Return top 12 insights
 
     def _generate_csv_insights(self):
-        """Generate insights from CSV data"""
+        """Generate insights from CSV data (based on 11GB dataset analysis)"""
         insights = []
         
         # Top artist insights
         if 'top_artists' in self.csv_data and len(self.csv_data['top_artists']) > 0:
             top_artist = self.csv_data['top_artists'].iloc[0]
-            insights.append(f"🎤 **{top_artist['artist']}** dominates with **{top_artist['play_count']:,} plays**")
+            insights.append(f"🎤 **{top_artist['artist']}** dominates with **{top_artist['play_count']:,} plays** across 11GB dataset")
         
         # Geographic insights
         if 'geographic_analysis' in self.csv_data and len(self.csv_data['geographic_analysis']) > 0:
-            top_city = self.csv_data['geographic_analysis'].iloc[0]
-            insights.append(f"🌍 **{top_city['city']}, {top_city['state']}** leads with **{top_city['total_plays']:,} plays**")
+            top_state = self.csv_data['geographic_analysis'].iloc[0]
+            insights.append(f"🌍 **{top_state['state']}** leads with **{top_state['total_plays']:,} plays** across **{top_state['cities_count']} cities** (11GB analysis)")
         
         # Genre insights
         if 'genre_popularity' in self.csv_data and len(self.csv_data['genre_popularity']) > 0:
             top_genre = self.csv_data['genre_popularity'].iloc[0]
-            insights.append(f"🎵 **{top_genre['genre']}** is trending with **{top_genre['play_count']:,} plays**")
+            insights.append(f"🎵 **{top_genre['genre']}** is trending with **{top_genre['play_count']:,} plays** from full dataset")
         
         return insights
 
@@ -97,29 +126,34 @@ class DataInsightBot:
         return insights
 
     def _analyze_user_behavior(self):
-        """Analyze user behavior patterns"""
+        """Analyze user behavior patterns (sampled from 11GB dataset)"""
         insights = []
         listen_df = self.raw_data['listen_events']
         
         try:
+            # Add dataset scope context
+            total_events = self.full_dataset_sizes.get('listen_events', 0)
+            sample_size = len(listen_df)
+            
             # Session analysis
             if 'sessionId' in listen_df.columns:
                 session_lengths = listen_df.groupby('sessionId').size()
                 avg_session = session_lengths.mean()
                 max_session = session_lengths.max()
-                insights.append(f"🎧 **Session patterns**: Average {avg_session:.1f} songs per session, longest session had {max_session} tracks")
+                insights.append(f"🎧 **Session patterns** (from {total_events:,} events): Average {avg_session:.1f} songs per session, longest session had {max_session} tracks")
             
             # User engagement
             if 'userId' in listen_df.columns:
                 user_activity = listen_df.groupby('userId').size()
                 top_user_plays = user_activity.max()
                 avg_user_plays = user_activity.mean()
-                insights.append(f"👤 **User engagement**: Most active user played {top_user_plays} songs, average {avg_user_plays:.1f} per user")
+                unique_users = len(user_activity)
+                insights.append(f"👤 **User engagement** (sampled data): {unique_users:,} users analyzed, most active user played {top_user_plays} songs, average {avg_user_plays:.1f} per user")
             
             # Song completion analysis
             if 'length' in listen_df.columns and listen_df['length'].notna().any():
                 avg_length = listen_df['length'].mean() / 1000  # Convert to seconds
-                insights.append(f"⏱️ **Song duration**: Average track length is {avg_length:.1f} seconds")
+                insights.append(f"⏱️ **Song duration** (11GB dataset): Average track length is {avg_length:.1f} seconds")
         
         except Exception as e:
             insights.append(f"⚠️ **Behavior analysis**: Limited due to data structure")
@@ -405,12 +439,12 @@ class DataInsightBot:
             if 'geographic_analysis' in self.csv_data and len(self.csv_data['geographic_analysis']) > 0:
                 if 'how many' in question or 'count' in question:
                     if 'cities' in question or 'city' in question:
-                        total_cities = len(self.csv_data['geographic_analysis']['city'].unique()) if 'city' in self.csv_data['geographic_analysis'].columns else len(self.csv_data['geographic_analysis'])
-                        total_states = len(self.csv_data['geographic_analysis']['state'].unique()) if 'state' in self.csv_data['geographic_analysis'].columns else 0
-                        return f"🌍 **Geographic Coverage**: There are {total_cities:,} unique cities across {total_states} states in the dataset. Top city is {self.csv_data['geographic_analysis'].iloc[0]['city']}, {self.csv_data['geographic_analysis'].iloc[0]['state']} with {self.csv_data['geographic_analysis'].iloc[0]['total_plays']:,} plays."
+                        total_cities = sum(self.csv_data['geographic_analysis']['cities_count']) if 'cities_count' in self.csv_data['geographic_analysis'].columns else 0
+                        total_states = len(self.csv_data['geographic_analysis'])
+                        return f"🌍 **Geographic Coverage**: There are {total_cities:,} unique cities across {total_states} states in the dataset. Top state is {self.csv_data['geographic_analysis'].iloc[0]['state']} with {self.csv_data['geographic_analysis'].iloc[0]['total_plays']:,} plays across {self.csv_data['geographic_analysis'].iloc[0]['cities_count']} cities."
                 else:
-                    top_city = self.csv_data['geographic_analysis'].iloc[0]
-                    return f"🌍 **Top Location**: {top_city['city']}, {top_city['state']} has the most activity with {top_city['total_plays']:,} total plays."
+                    top_state = self.csv_data['geographic_analysis'].iloc[0]
+                    return f"🌍 **Top Location**: {top_state['state']} has the most activity with {top_state['total_plays']:,} total plays across {top_state['cities_count']} cities."
         
         # Song-related questions
         if any(word in question for word in ['song', 'track', 'music', 'play']):

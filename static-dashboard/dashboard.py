@@ -426,6 +426,9 @@ def load_aggregated_data():
             'top_artist_per_state': pd.read_csv('aggregated_data/top_artist_per_state.csv', encoding='utf-8')
         }
         
+        # Calculate avg_song_duration for engagement_by_level
+        csv_data['engagement_by_level']['avg_song_duration'] = csv_data['engagement_by_level']['total_duration'] / csv_data['engagement_by_level']['total_plays']
+        
         return aggregated_data, csv_data
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -495,12 +498,17 @@ st.session_state.previous_analysis = selected_analysis
 
 # State filter for regional analysis
 if selected_analysis == "🌍 Regional Analysis":
-    available_states = sorted(csv_data['top_artist_per_state']['state'].unique())
-    selected_states = st.sidebar.multiselect(
-        "Select States", 
-        available_states, 
-        default=available_states[:10]
-    )
+    if 'geographic_analysis' in csv_data and len(csv_data['geographic_analysis']) > 0:
+        available_states = sorted(csv_data['geographic_analysis']['state'].unique())
+        selected_states = st.sidebar.multiselect(
+            "Select States", 
+            available_states, 
+            default=available_states[:10]
+        )
+    else:
+        available_states = []
+        selected_states = []
+        st.sidebar.warning("No state data available")
 
 st.sidebar.divider()
 st.sidebar.markdown("**📈 Quick Stats**")
@@ -537,12 +545,12 @@ else:
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            avg_dau = sum([day['daily_active_users'] for day in user_analytics['daily_active_users']]) / len(user_analytics['daily_active_users'])
+            avg_dau = sum([day['active_users'] for day in user_analytics['daily_active_users']]) / len(user_analytics['daily_active_users'])
             st.metric("Avg Daily Active Users", f"{int(avg_dau):,}")
             
         with col2:
-            paid_users = user_analytics['subscription_levels']['paid']
-            free_users = user_analytics['subscription_levels']['free']
+            paid_users = user_analytics['subscription_levels']['paid']['unique_users']
+            free_users = user_analytics['subscription_levels']['free']['unique_users']
             paid_percent = (paid_users / (paid_users + free_users)) * 100
             st.metric("Paid Subscribers", f"{paid_percent:.1f}%")
             
@@ -561,7 +569,7 @@ else:
         daily_df = pd.DataFrame(user_analytics['daily_active_users'])
         daily_df['date'] = pd.to_datetime(daily_df['date'])
         
-        fig_daily = px.line(daily_df, x='date', y='daily_active_users', 
+        fig_daily = px.line(daily_df, x='date', y='active_users', 
                            title='Daily Active Users Over Time',
                            markers=True,
                            line_shape='spline')
@@ -653,9 +661,9 @@ else:
         with col2:
             st.subheader("🕐 Hourly Listening Patterns")
             hourly_df = csv_data['hourly_patterns']
-            fig_hourly = px.bar(hourly_df, x='hour', y='total_plays',
+            fig_hourly = px.bar(hourly_df, x='hour', y='play_count',
                                title='Listening Activity by Hour',
-                               color='total_plays',
+                               color='play_count',
                                color_continuous_scale='Turbo')
             fig_hourly.update_layout(
                 xaxis_title='Hour of Day', 
@@ -675,38 +683,37 @@ else:
     elif selected_analysis == "🌍 Regional Analysis":
         st.subheader("🗺️ Regional Music Preferences")
         
-        # --- TOP ARTIST PER STATE MAP ---
-        st.markdown("### 🏆 Most Popular Artist by State")
+        # --- REGIONAL ANALYSIS ---
+        st.markdown("### 🏆 Most Active States by Listening Activity")
         
-        # Create state mapping for visualization
-        top_artist_state = csv_data['top_artist_per_state'].copy()
+        # Use geographic analysis data (available and populated)
+        geo_data = csv_data['geographic_analysis'].copy()
         
         # Display top states
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("**🎯 Artist Champions by State**")
-            display_states = top_artist_state.nlargest(10, 'play_count')
+            st.markdown("**🎯 Top States by Play Count**")
+            display_states = geo_data.nlargest(10, 'total_plays')
             for _, row in display_states.iterrows():
-                st.markdown(f"**{row['state']}**: {row['artist']} ({row['play_count']} plays)")
+                st.markdown(f"**{row['state']}**: {row['total_plays']:,} plays ({row['cities_count']} cities)")
         
         with col2:
-            st.markdown("**📊 Regional Diversity**")
-            artist_dominance = top_artist_state['artist'].value_counts()
-            top_10_dominance = artist_dominance.head(10)
-            fig_dominance = px.bar(x=top_10_dominance.index, y=top_10_dominance.values,
-                                  title='Artists Leading Multiple States',
-                                  color=top_10_dominance.values,
+            st.markdown("**📊 Regional Activity Distribution**")
+            top_10_states = geo_data.head(10)
+            fig_dominance = px.bar(x=top_10_states['state'], y=top_10_states['total_plays'],
+                                  title='Top 10 States by Total Plays',
+                                  color=top_10_states['total_plays'],
                                   color_continuous_scale='Cividis')
             fig_dominance.update_layout(
-                xaxis_title='Artist', 
-                yaxis_title='States Led',
+                xaxis_title='State', 
+                yaxis_title='Total Plays',
                 coloraxis_showscale=False,
                 xaxis=dict(tickangle=45)
             )
             fig_dominance.update_traces(
-                hovertemplate='<b>%{x}</b><br>Leading in %{y} states<extra></extra>',
-                texttemplate='%{y}',
+                hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
+                texttemplate='%{y:,.0f}',
                 textposition='outside',
                 textfont=dict(color='#fafafa', size=11)
             )
@@ -719,39 +726,38 @@ else:
         if selected_states:
             st.markdown(f"### 🎵 Detailed Analysis for Selected States")
             
-            # Filter data for selected states
-            filtered_artists = csv_data['top_artists_by_state'][
-                csv_data['top_artists_by_state']['state'].isin(selected_states)
-            ]
-            filtered_songs = csv_data['top_songs_by_state'][
-                csv_data['top_songs_by_state']['state'].isin(selected_states)
-            ]
+            # Filter geographic data for selected states
+            filtered_geo = geo_data[geo_data['state'].isin(selected_states)]
             
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("**🎤 Top Artists in Selected States**")
-                # Show top 5 artists per selected state
-                for state in selected_states[:5]:  # Limit to first 5 states for readability
-                    state_artists = filtered_artists[filtered_artists['state'] == state].head(3)
-                    st.markdown(f"**{state}:**")
-                    for _, row in state_artists.iterrows():
-                        st.markdown(f"  {row['rank']}. {row['artist']} ({row['play_count']} plays)")
+                st.markdown("**🌆 State Activity Summary**")
+                for _, row in filtered_geo.iterrows():
+                    st.markdown(f"**{row['state']}:**")
+                    st.markdown(f"  • Total Plays: {row['total_plays']:,}")
+                    st.markdown(f"  • Cities: {row['cities_count']}")
+                    st.markdown(f"  • Avg Plays/City: {row['total_plays']/row['cities_count']:,.0f}")
             
             with col2:
-                st.markdown("**🎵 Top Songs in Selected States**")
-                for state in selected_states[:5]:
-                    state_songs = filtered_songs[filtered_songs['state'] == state].head(3)
-                    st.markdown(f"**{state}:**")
-                    for _, row in state_songs.iterrows():
-                        st.markdown(f"  {row['rank']}. {row['song']} by {row['artist']}")
+                st.markdown("**📊 Comparative Analysis**")
+                if len(filtered_geo) > 1:
+                    # Create comparison chart
+                    fig_compare = px.bar(filtered_geo, x='state', y='total_plays',
+                                       title='Selected States Comparison',
+                                       color='total_plays',
+                                       color_continuous_scale='Viridis')
+                    fig_compare = apply_dark_theme(fig_compare)
+                    st.plotly_chart(fig_compare, use_container_width=True)
+                else:
+                    st.markdown("Select multiple states to see comparison.")
         
         # --- GEOGRAPHIC CONCENTRATION ---
         st.subheader("📍 Geographic Activity Hotspots")
         geo_df = csv_data['geographic_analysis'].head(15)
-        fig_geo = px.bar(geo_df, x='total_plays', y='city', orientation='h',
-                        title='Top 15 Cities by Total Plays',
-                        hover_data=['state', 'unique_users'],
+        fig_geo = px.bar(geo_df, x='total_plays', y='state', orientation='h',
+                        title='Top 15 States by Total Plays',
+                        hover_data=['cities_count'],
                         color='total_plays',
                         color_continuous_scale='Inferno')
         fig_geo.update_layout(
@@ -761,7 +767,7 @@ else:
             coloraxis_showscale=False
         )
         fig_geo.update_traces(
-            hovertemplate='<b>%{y}, %{customdata[0]}</b><br>%{x:,} total plays<br>%{customdata[1]} unique users<extra></extra>',
+            hovertemplate='<b>%{y}</b><br>%{x:,} total plays<br>%{customdata[0]} cities<extra></extra>',
             texttemplate='%{x:,}',
             textposition='outside',
             textfont=dict(color='#fafafa', size=10)
@@ -912,8 +918,8 @@ else:
         st.markdown("### 💳 Subscription Levels")
         col1, col2, col3 = st.columns(3)
         
-        free_users = user_analytics['subscription_levels']['free']
-        paid_users = user_analytics['subscription_levels']['paid']
+        free_users = user_analytics['subscription_levels']['free']['unique_users']
+        paid_users = user_analytics['subscription_levels']['paid']['unique_users']
         total_users = free_users + paid_users
         
         with col1:
@@ -928,7 +934,7 @@ else:
         
         col1, col2 = st.columns(2)
         with col1:
-            fig_engagement = px.bar(engagement_df, x='subscription_level', y='total_plays',
+            fig_engagement = px.bar(engagement_df, x='level', y='total_plays',
                                    title='Total Plays by Subscription Level',
                                    color='total_plays',
                                    color_continuous_scale='RdYlBu_r')
@@ -943,7 +949,7 @@ else:
             st.plotly_chart(fig_engagement, use_container_width=True)
         
         with col2:
-            fig_avg_duration = px.bar(engagement_df, x='subscription_level', y='avg_song_duration',
+            fig_avg_duration = px.bar(engagement_df, x='level', y='avg_song_duration',
                                      title='Average Song Duration by Subscription Level',
                                      color='avg_song_duration',
                                      color_continuous_scale='Viridis')
@@ -983,7 +989,7 @@ else:
         
         with col2:
             st.markdown("### 🏆 Artist Performance")
-            top_artists_df = pd.DataFrame(content_analytics['top_artists'][:15])
+            top_artists_df = csv_data['top_artists'].head(15).copy()
             fig_artist_perf = px.scatter(top_artists_df, x='artist', y='play_count',
                                        size='play_count', 
                                        title='Artist Performance Bubble Chart',
@@ -999,7 +1005,7 @@ else:
         
         # --- SONG ANALYSIS ---
         st.markdown("### 🎵 Song Performance Analysis")
-        top_songs_df = pd.DataFrame(content_analytics['top_songs'][:20])
+        top_songs_df = csv_data['top_songs'].head(20).copy()
         
         # Create combined artist-song label for better visualization
         top_songs_df['song_label'] = top_songs_df['artist'] + ' - ' + top_songs_df['song'].str[:30] + '...'
@@ -1036,14 +1042,14 @@ else:
             daily_df['weekday'] = daily_df['date'].dt.day_name()
             
             # Calculate average by weekday
-            weekday_avg = daily_df.groupby('weekday')['daily_active_users'].mean().reset_index()
+            weekday_avg = daily_df.groupby('weekday')['active_users'].mean().reset_index()
             weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
             weekday_avg['weekday'] = pd.Categorical(weekday_avg['weekday'], categories=weekday_order, ordered=True)
             weekday_avg = weekday_avg.sort_values('weekday')
             
-            fig_weekday = px.bar(weekday_avg, x='weekday', y='daily_active_users',
+            fig_weekday = px.bar(weekday_avg, x='weekday', y='active_users',
                                title='Average Daily Active Users by Weekday',
-                               color='daily_active_users',
+                               color='active_users',
                                color_continuous_scale='Blues')
             fig_weekday.update_xaxes(tickangle=45)
             fig_weekday.update_layout(coloraxis_showscale=False)
@@ -1059,7 +1065,7 @@ else:
         with col2:
             st.markdown("### 🕐 Hourly Usage Patterns")
             hourly_df = csv_data['hourly_patterns']
-            fig_hourly_detailed = px.line(hourly_df, x='hour', y='total_plays', markers=True,
+            fig_hourly_detailed = px.line(hourly_df, x='hour', y='play_count', markers=True,
                                         title='Listening Activity Throughout the Day',
                                         line_shape='spline')
             fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays')
@@ -1080,18 +1086,18 @@ else:
         
         # Calculate peak hour
         hourly_data = csv_data['hourly_patterns']
-        max_plays = hourly_data['total_plays'].max()
-        peak_hour_row = hourly_data[hourly_data['total_plays'] == max_plays].iloc[0]
+        max_plays = hourly_data['play_count'].max()
+        peak_hour_row = hourly_data[hourly_data['play_count'] == max_plays].iloc[0]
         with col2:
-            st.metric("Peak Hour", f"{int(peak_hour_row['hour']):02d}:00", f"{int(peak_hour_row['total_plays']):,} plays")
+            st.metric("Peak Hour", f"{int(peak_hour_row['hour']):02d}:00", f"{int(peak_hour_row['play_count']):,} plays")
         
         # Calculate most active day
         daily_df = pd.DataFrame(user_analytics['daily_active_users'])
         daily_df['date'] = pd.to_datetime(daily_df['date'])
-        max_users = daily_df['daily_active_users'].max()
-        most_active_row = daily_df[daily_df['daily_active_users'] == max_users].iloc[0]
+        max_users = daily_df['active_users'].max()
+        most_active_row = daily_df[daily_df['active_users'] == max_users].iloc[0]
         with col3:
-            st.metric("Most Active Day", most_active_row['date'].strftime('%m/%d'), f"{int(most_active_row['daily_active_users']):,} users")
+            st.metric("Most Active Day", most_active_row['date'].strftime('%m/%d'), f"{int(most_active_row['active_users']):,} users")
 
 # --- ENHANCED AI INSIGHTS BOT ---
 st.divider()
@@ -1102,51 +1108,58 @@ st.markdown("*Ask natural language questions about user behavior, sessions, devi
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'bot' not in st.session_state:
-    # Initialize enhanced bot with both CSV and raw data
+    # Initialize enhanced bot with both CSV and full 11GB raw data
     raw_data_paths = {
-        'listen_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/listen_events_head.jsonl',
-        'auth_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/auth_events_head.jsonl',
-        'page_view_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/page_view_events_head.jsonl',
-        'status_change_events': '/Users/iara/Projects/Zippotify_Datapipe/data/sample/status_change_events_head.jsonl'
+        'listen_events': '/Users/iara/Projects/Zippotify_Datapipe/output/listen_events',
+        'auth_events': '/Users/iara/Projects/Zippotify_Datapipe/output/auth_events',
+        'page_view_events': '/Users/iara/Projects/Zippotify_Datapipe/output/page_view_events',
+        'status_change_events': '/Users/iara/Projects/Zippotify_Datapipe/output/status_change_events'
     }
     st.session_state.bot = DataInsightBot(csv_data, raw_data_paths)
 
 # AI Data Source Summary in sidebar
 st.sidebar.divider()
-st.sidebar.markdown("**🔗 AI Data Sources**")
+st.sidebar.markdown("**🔗 AI Data Sources (11GB Dataset)**")
 if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
     for data_type, df in st.session_state.bot.raw_data.items():
         if not df.empty:
-            st.sidebar.metric(f"{data_type.replace('_', ' ').title()}", f"{len(df):,} events")
+            full_size = st.session_state.bot.full_dataset_sizes.get(data_type, 0)
+            if full_size > len(df):
+                st.sidebar.metric(f"{data_type.replace('_', ' ').title()}", 
+                                f"{len(df):,} sampled", 
+                                f"from {full_size:,} total")
+            else:
+                st.sidebar.metric(f"{data_type.replace('_', ' ').title()}", f"{len(df):,} events")
 else:
-    st.sidebar.info("Raw event data loading...")
+    st.sidebar.info("11GB raw event data loading...")
 
 # Display AI capabilities and data summary
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.markdown("### 🎯 AI Capabilities")
+    st.markdown("### 🎯 AI Capabilities (11GB Dataset)")
     st.markdown("""
     **Enhanced Analytics Available:**
-    - 📊 Session analysis and user journey insights
-    - 📱 Device usage patterns and platform analytics  
-    - 🔐 Authentication behavior and login trends
+    - 📊 Session analysis from 10.7M+ listening events
+    - 📱 Device usage patterns across full dataset  
+    - 🔐 Authentication trends from 142K+ auth events
     - 📈 Advanced engagement metrics and retention
-    - 🎵 Deep music listening patterns and preferences
-    - 🌐 Geographic and temporal behavior analysis
+    - 🎵 Deep music listening patterns (36K+ artists)
+    - 🌐 Geographic analysis across 1,789+ cities
     """)
 
 with col2:
     if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
-        st.markdown("### 📊 Data Summary")
-        total_events = sum(len(df) for df in st.session_state.bot.raw_data.values() if not df.empty)
-        st.metric("Total Raw Events", f"{total_events:,}")
-        st.metric("Data Sources", f"CSV + {len(st.session_state.bot.raw_data)} JSONL")
+        st.markdown("### 📊 11GB Dataset Summary")
+        total_full_events = sum(st.session_state.bot.full_dataset_sizes.values())
+        total_sampled_events = sum(len(df) for df in st.session_state.bot.raw_data.values() if not df.empty)
+        st.metric("Total Dataset Events", f"{total_full_events:,}", f"{total_sampled_events:,} sampled")
+        st.metric("Data Sources", f"CSV + {len(st.session_state.bot.raw_data)} JSONL files")
         
         # Generate and display enhanced insights
-        with st.spinner("🤖 Generating enhanced insights..."):
+        with st.spinner("🤖 Generating enhanced insights from 11GB dataset..."):
             enhanced_insights = st.session_state.bot.generate_enhanced_insights()
-            st.markdown("**🚀 Smart Insights:**")
+            st.markdown("**🚀 Smart Insights (11GB Analysis):**")
             for insight in enhanced_insights[:3]:
                 st.markdown(f"• {insight}")
 
