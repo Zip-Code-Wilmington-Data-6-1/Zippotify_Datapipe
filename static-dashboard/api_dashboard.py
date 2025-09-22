@@ -259,7 +259,7 @@ def show_content_analytics(data):
             fig_artists = px.bar(
                 df_artists,
                 x='play_count',
-                y='artist_name',
+                y='artist',
                 orientation='h',
                 title='Most Popular Artists',
                 color='play_count',
@@ -395,7 +395,10 @@ def show_advanced_api_features():
     
     # Dynamic state selection
     if st.sidebar.checkbox("🗺️ State-Specific Analysis"):
-        state = st.sidebar.selectbox("Select State", ["CA", "TX", "NY", "FL", "IL"])
+        # Get available states dynamically
+        available_states_data = fetch_api_data("/content_analytics/available_states")
+        available_states = [state["state"] for state in available_states_data] if available_states_data else ["CA", "TX", "NY", "FL", "IL"]
+        state = st.sidebar.selectbox("Select State", available_states)
         
         if state:
             st.subheader(f"📍 Analysis for {state}")
@@ -410,13 +413,19 @@ def show_advanced_api_features():
                 if state_artists:
                     st.markdown("**🎤 Top Artists**")
                     for artist in state_artists[:5]:
-                        st.markdown(f"• {artist['artist']} ({artist['play_count']} plays)")
+                        if isinstance(artist, dict) and 'artist' in artist and 'play_count' in artist:
+                            st.markdown(f"• {artist['artist']} ({artist['play_count']} plays)")
+                        else:
+                            st.markdown(f"• {artist}")  # Fallback for malformed data
             
             with col2:
                 if state_songs:
                     st.markdown("**🎵 Top Songs**")
                     for song in state_songs[:5]:
-                        st.markdown(f"• {song['song']} by {song['artist']}")
+                        if isinstance(song, dict) and 'song' in song and 'artist' in song:
+                            st.markdown(f"• {song['song']} by {song['artist']}")
+                        else:
+                            st.markdown(f"• {song}")  # Fallback for malformed data
     
     # Date range analysis
     if st.sidebar.checkbox("📅 Date Range Analysis"):
