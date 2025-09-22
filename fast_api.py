@@ -2,7 +2,16 @@
 from fastapi import FastAPI, Depends, HTTPException
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from database import SessionLocal
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        
 from models import DimArtist, DimLocation, DimUser, DimSong, DimGenre, DimSongGenre, DimTime, FactPlays
 from pydantic import BaseModel
 from datetime import datetime, date
@@ -162,3 +171,246 @@ def get_times(db: Session = Depends(get_db)):
 @app.get("/fact_plays", response_model=List[FactPlay])
 def get_fact_plays(db: Session = Depends(get_db)):
     return db.query(FactPlays).all()
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/health/db")
+def health_db():
+    try:
+        with SessionLocal() as s:
+            s.execute(text("SELECT 1"))
+        return {"db": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Example: Metadata endpoint
+@app.get("/metadata")
+def get_metadata(db: Session = Depends(get_db)):
+    total_users = db.query(DimUser).count()
+    total_listen_events = db.query(FactPlays).count()
+    total_page_views = db.query(FactPlays).filter(FactPlays.session_id.isnot(None)).count()  # Example logic
+    total_status_changes = db.query(FactPlays).filter(FactPlays.user_level.isnot(None)).count()  # Example logic
+
+    # Get min/max date from DimTime
+    date_range = db.query(db.func.min(DimTime.date), db.func.max(DimTime.date)).first()
+    return {
+        "generated_at": datetime.now().isoformat(),
+        "total_users": total_users,
+        "total_listen_events": total_listen_events,
+        "total_page_views": total_page_views,
+        "total_status_changes": total_status_changes,
+        "date_range": {"start": str(date_range[0]), "end": str(date_range[1])}
+    }
+
+# Example: Daily active users
+@app.get("/user_analytics/daily_active_users")
+def get_daily_active_users(db: Session = Depends(get_db)):
+    # Count distinct users per day
+    results = (
+        db.query(DimTime.date, db.func.count(db.func.distinct(FactPlays.user_id)).label("active_users"))
+        .join(FactPlays, FactPlays.time_key == DimTime.time_key)
+        .group_by(DimTime.date)
+        .order_by(DimTime.date)
+        .all()
+    )
+    return [{"date": str(r[0]), "active_users": r[1]} for r in results]
+
+# Example: Age distribution
+@app.get("/user_analytics/age_distribution")
+def get_age_distribution(db: Session = Depends(get_db)):
+    # Example: group users by age (assuming birthday is year of birth)
+    current_year = datetime.now().year
+    results = (
+        db.query((current_year - DimUser.birthday).label("age"), db.func.count(DimUser.user_id))
+        .group_by("age")
+        .order_by("age")
+        .all()
+    )
+    return [{"age": r[0], "count": r[1]} for r in results if r[0] is not None]
+
+# Example: Subscription levels
+@app.get("/user_analytics/subscription_levels")
+def get_subscription_levels(db: Session = Depends(get_db)):
+    free = db.query(DimUser).filter(DimUser.user_level == 'free').count()
+    paid = db.query(DimUser).filter(DimUser.user_level == 'paid').count()
+    return {"free": free, "paid": paid}
+
+# Example: Genre popularity
+@app.get("/content_analytics/genre_popularity")
+def get_genre_popularity(db: Session = Depends(get_db)):
+    results = (
+        db.query(DimGenre.genre_name, db.func.count(FactPlays.play_id).label("play_count"))
+        .join(DimSongGenre, DimSongGenre.genre_id == DimGenre.genre_id)
+        .join(FactPlays, FactPlays.song_id == DimSongGenre.song_id)
+        .group_by(DimGenre.genre_name)
+        .order_by(db.desc("play_count"))
+        .all()
+    )
+    return [{"genre": r[0], "play_count": r[1]} for r in results]
+
+# Example: Top artists
+@app.get("/content_analytics/top_artists")
+def get_top_artists(db: Session = Depends(get_db)):
+    results = (
+        db.query(DimArtist.artist_name, db.func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+        .group_by(DimArtist.artist_name)
+        .order_by(db.desc("play_count"))
+        .limit(10)
+        .all()
+    )
+    return [{"artist": r[0], "play_count": r[1]} for r in results]
+
+# Example: Top songs by state
+@app.get("/content_analytics/top_songs_by_state")
+def get_top_songs_by_state(db: Session = Depends(get_db)):
+    results = (
+        db.query(DimLocation.state, DimSong.song_title, db.func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.location_id == DimLocation.location_id)
+        .join(DimSong, FactPlays.song_id == DimSong.song_id)
+        .group_by(DimLocation.state, DimSong.song_title)
+        .order_by(DimLocation.state, db.desc("play_count"))
+        .all()
+    )
+    # Group by state
+    from collections import defaultdict
+    state_songs = defaultdict(list)
+    for state, song, count in results:
+        state_songs[state].append({"song": song, "play_count": count})
+    return state_songs
+
+# Top song per state
+@app.get("/content_analytics/top_song_per_state")
+def get_top_song_per_state(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    subq = (
+        db.query(
+            FactPlays.location_id,
+            FactPlays.song_id,
+            func.count(FactPlays.play_id).label("play_count")
+        )
+        .group_by(FactPlays.location_id, FactPlays.song_id)
+        .subquery()
+    )
+    results = (
+        db.query(DimLocation.state, DimSong.song_title, subq.c.play_count)
+        .join(subq, subq.c.location_id == DimLocation.location_id)
+        .join(DimSong, subq.c.song_id == DimSong.song_id)
+        .order_by(DimLocation.state, subq.c.play_count.desc())
+        .all()
+    )
+    # For each state, pick the top song
+    top_per_state = {}
+    for state, song, count in results:
+        if state not in top_per_state:
+            top_per_state[state] = {"song": song, "play_count": count}
+    return top_per_state
+
+# Top artists by state
+@app.get("/content_analytics/top_artists_by_state")
+def get_top_artists_by_state(db: Session = Depends(get_db)):
+    results = (
+        db.query(DimLocation.state, DimArtist.artist_name, db.func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.location_id == DimLocation.location_id)
+        .join(DimArtist, FactPlays.artist_id == DimArtist.artist_id)
+        .group_by(DimLocation.state, DimArtist.artist_name)
+        .order_by(DimLocation.state, db.desc("play_count"))
+        .all()
+    )
+    from collections import defaultdict
+    state_artists = defaultdict(list)
+    for state, artist, count in results:
+        state_artists[state].append({"artist": artist, "play_count": count})
+    return state_artists
+
+# Top artist per state
+@app.get("/content_analytics/top_artist_per_state")
+def get_top_artist_per_state(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    subq = (
+        db.query(
+            FactPlays.location_id,
+            FactPlays.artist_id,
+            func.count(FactPlays.play_id).label("play_count")
+        )
+        .group_by(FactPlays.location_id, FactPlays.artist_id)
+        .subquery()
+    )
+    results = (
+        db.query(DimLocation.state, DimArtist.artist_name, subq.c.play_count)
+        .join(subq, subq.c.location_id == DimLocation.location_id)
+        .join(DimArtist, subq.c.artist_id == DimArtist.artist_id)
+        .order_by(DimLocation.state, subq.c.play_count.desc())
+        .all()
+    )
+    # For each state, pick the top artist
+    top_per_state = {}
+    for state, artist, count in results:
+        if state not in top_per_state:
+            top_per_state[state] = {"artist": artist, "play_count": count}
+    return top_per_state
+
+# Average plays per session
+@app.get("/content_analytics/average_plays_per_session")
+def get_average_plays_per_session(db: Session = Depends(get_db)):
+    total_plays = db.query(FactPlays.session_id, db.func.count(FactPlays.play_id)).group_by(FactPlays.session_id).all()
+    if not total_plays:
+        return {"average_plays_per_session": 0.0}
+    avg = sum([c for _, c in total_plays]) / len(total_plays)
+    return {"average_plays_per_session": avg}
+
+# Engagement by subscription level
+@app.get("/engagement_analytics/by_subscription_level")
+def get_engagement_by_level(db: Session = Depends(get_db)):
+    results = (
+        db.query(FactPlays.user_level, db.func.count(FactPlays.play_id).label("play_count"))
+        .group_by(FactPlays.user_level)
+        .all()
+    )
+    return [{"user_level": r[0], "play_count": r[1]} for r in results if r[0] is not None]
+
+# Hourly patterns
+@app.get("/engagement_analytics/hourly_patterns")
+def get_hourly_patterns(db: Session = Depends(get_db)):
+    results = (
+        db.query(DimTime.hour, db.func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.time_key == DimTime.time_key)
+        .group_by(DimTime.hour)
+        .order_by(DimTime.hour)
+        .all()
+    )
+    return [{"hour": r[0], "play_count": r[1]} for r in results]
+
+# Geographic distribution
+@app.get("/engagement_analytics/geographic_distribution")
+def get_geographic_distribution(db: Session = Depends(get_db)):
+    results = (
+        db.query(DimLocation.state, DimLocation.city, db.func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.location_id == DimLocation.location_id)
+        .group_by(DimLocation.state, DimLocation.city)
+        .order_by(DimLocation.state, DimLocation.city)
+        .all()
+    )
+    return [
+        {"state": r[0], "city": r[1], "play_count": r[2]} for r in results
+    ]
+
+# User profiles (basic example)
+@app.get("/user_profiles")
+def get_user_profiles(db: Session = Depends(get_db)):
+    users = db.query(DimUser).all()
+    return [
+        {
+            "user_id": u.user_id,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "gender": u.gender,
+            "registration_ts": u.registration_ts,
+            "birthday": u.birthday,
+            "user_level": getattr(u, 'user_level', None)
+        }
+        for u in users
+    ]
+

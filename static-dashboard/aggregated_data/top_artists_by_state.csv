@@ -1,0 +1,256 @@
+state,artist,play_count,rank
+AK,Kings Of Leon,4,1
+AK,Cat Stevens,3,2
+AK,Lily Allen,3,3
+AK,Alliance Ethnik,3,4
+AK,Florence + The Machine,3,5
+AL,Florence + The Machine,9,1
+AL,Kings Of Leon,9,2
+AL,Eminem,8,3
+AL,Taylor Swift,7,4
+AL,Muse,7,5
+AR,Coldplay,6,1
+AR,Aerosmith,6,2
+AR,Lily Allen,5,3
+AR,Muse,4,4
+AR,The All-American Rejects,4,5
+AZ,Kings Of Leon,10,1
+AZ,Jack Johnson,9,2
+AZ,Eminem,8,3
+AZ,OneRepublic,8,4
+AZ,Bjork,8,5
+CA,Kings Of Leon,63,1
+CA,Coldplay,59,2
+CA,Muse,42,3
+CA,Dwight Yoakam,37,4
+CA,The Black Keys,37,5
+CO,Florence + The Machine,10,1
+CO,Kings Of Leon,10,2
+CO,Taylor Swift,8,3
+CO,The Killers,7,4
+CO,Rammstein,7,5
+CT,Coldplay,8,1
+CT,Muse,6,2
+CT,Eminem,5,3
+CT,Dwight Yoakam,4,4
+CT,Train,4,5
+DC,Battles,1,1
+DC,Brian Auger,1,2
+DC,The Manhattan Love Suicides,1,3
+DC,Sugar Pie DeSanto,1,4
+DC,Steve Harley & Cockney Rebel,1,5
+DE,Jack Johnson,3,1
+DE,The Killers,2,2
+DE,Panic At The Disco,2,3
+DE,Rihanna,2,4
+DE,Red Hot Chili Peppers,2,5
+FL,Coldplay,19,1
+FL,Kings Of Leon,15,2
+FL,Alliance Ethnik,15,3
+FL,Bjork,14,4
+FL,Florence + The Machine,14,5
+GA,Coldplay,15,1
+GA,Kings Of Leon,13,2
+GA,Bjork,13,3
+GA,Muse,12,4
+GA,Florence + The Machine,10,5
+HI,Los Rodriguez,2,1
+HI,10 Years,1,2
+HI,Masta Killa,1,3
+HI,My Chemical Romance,1,4
+HI,Newsboys,1,5
+IA,Muse,4,1
+IA,Bjork,4,2
+IA,Jack Johnson,4,3
+IA,Guns N' Roses,4,4
+IA,Eminem,3,5
+ID,Five Iron Frenzy,2,1
+ID,AFI,1,2
+ID,Kings Of Convenience Featuring Feist,1,3
+ID,Owl City,1,4
+ID,Otis Redding,1,5
+IL,Kings Of Leon,22,1
+IL,Coldplay,16,2
+IL,Radiohead,15,3
+IL,Taylor Swift,13,4
+IL,The Black Keys,11,5
+IN,Kings Of Leon,8,1
+IN,Florence + The Machine,6,2
+IN,Black Eyed Peas,5,3
+IN,Dwight Yoakam,4,4
+IN,The All-American Rejects,4,5
+KS,Bjork,8,1
+KS,Metallica,6,2
+KS,Taylor Swift,6,3
+KS,Eminem,6,4
+KS,Coldplay,6,5
+KY,Muse,10,1
+KY,Coldplay,10,2
+KY,Florence + The Machine,7,3
+KY,Dwight Yoakam,7,4
+KY,Justin Bieber,7,5
+LA,Florence + The Machine,3,1
+LA,Coldplay,2,2
+LA,Mystikal,2,3
+LA,Band Of Horses,2,4
+LA,Bjork,2,5
+MA,Coldplay,12,1
+MA,Kings Of Leon,8,2
+MA,Bjork,8,3
+MA,Radiohead,8,4
+MA,Florence + The Machine,7,5
+MD,Kings Of Leon,11,1
+MD,Linkin Park,9,2
+MD,Jack Johnson,9,3
+MD,Muse,9,4
+MD,Daft Punk,8,5
+ME,Orishas,3,1
+ME,Kings Of Leon,3,2
+ME,Radiohead,3,3
+ME,OneRepublic,2,4
+ME,The Maine,2,5
+MI,Coldplay,12,1
+MI,The Black Keys,11,2
+MI,Harmonia,7,3
+MI,Daft Punk,6,4
+MI,Bjork,6,5
+MN,Coldplay,8,1
+MN,Linkin Park,6,2
+MN,Dwight Yoakam,6,3
+MN,Train,5,4
+MN,Justin Bieber,5,5
+MO,Coldplay,12,1
+MO,Dwight Yoakam,7,2
+MO,Justin Bieber,7,3
+MO,The Black Keys,6,4
+MO,Florence + The Machine,6,5
+MS,Barry Tuckwell/Academy of St Martin-in-the-Fields/Sir Neville Marriner,5,1
+MS,Coldplay,4,2
+MS,Colbie Caillat,3,3
+MS,Florence + The Machine,3,4
+MS,The All-American Rejects,3,5
+MT,Article One,1,1
+MT,Meiway,1,2
+MT,Sting,1,3
+MT,Robbie Williams,1,4
+MT,Rise Against,1,5
+NC,Coldplay,17,1
+NC,Justin Bieber,10,2
+NC,Avril Lavigne,8,3
+NC,Muse,8,4
+NC,Dwight Yoakam,8,5
+ND,Arctic Monkeys,3,1
+ND,Rihanna,3,2
+ND,Panic At The Disco,3,3
+ND,Muse,2,4
+ND,The White Stripes,2,5
+NE,Amy Winehouse,3,1
+NE,OneRepublic,2,2
+NE,Kings Of Leon,2,3
+NE,Brooklyn Bounce,2,4
+NE,Pepper,2,5
+NH,Coldplay,2,1
+NH,Bjork,2,2
+NH,10_000 Maniacs,1,3
+NH,Mike And The Mechanics,1,4
+NH,Panic At The Disco,1,5
+NJ,Kings Of Leon,13,1
+NJ,The Black Keys,8,2
+NJ,Justin Bieber,7,3
+NJ,Eminem,6,4
+NJ,Daft Punk,6,5
+NM,Eminem,2,1
+NM,Harmonia,2,2
+NM,Red Hot Chili Peppers,2,3
+NM,Linkin Park,2,4
+NM,Coldplay,2,5
+NV,Muse,7,1
+NV,Kings Of Leon,5,2
+NV,Florence + The Machine,4,3
+NV,Dwight Yoakam,4,4
+NV,Justin Bieber,4,5
+NY,Coldplay,34,1
+NY,Kings Of Leon,26,2
+NY,Justin Bieber,24,3
+NY,Jack Johnson,24,4
+NY,Radiohead,20,5
+OH,Bjork,16,1
+OH,Kings Of Leon,15,2
+OH,Coldplay,12,3
+OH,Dwight Yoakam,11,4
+OH,Muse,11,5
+OK,The Black Keys,11,1
+OK,Coldplay,10,2
+OK,Dwight Yoakam,8,3
+OK,Muse,8,4
+OK,Florence + The Machine,7,5
+OR,Black Eyed Peas,4,1
+OR,Taylor Swift,3,2
+OR,Kings Of Leon,3,3
+OR,Bjork,3,4
+OR,Coldplay,3,5
+PA,Kings Of Leon,19,1
+PA,Coldplay,18,2
+PA,The Black Keys,14,3
+PA,Jack Johnson,11,4
+PA,Florence + The Machine,11,5
+RI,Coldplay,3,1
+RI,Phoenix,3,2
+RI,Guns N' Roses,3,3
+RI,Kings Of Leon,2,4
+RI,Jack Johnson,2,5
+SC,Kings Of Leon,8,1
+SC,Justin Bieber,7,2
+SC,Florence + The Machine,7,3
+SC,Alliance Ethnik,7,4
+SC,Taylor Swift,6,5
+SD,Kanye West,4,1
+SD,Coldplay,4,2
+SD,Kings Of Leon,3,3
+SD,Dwight Yoakam,3,4
+SD,matchbox twenty,2,5
+TN,Kings Of Leon,10,1
+TN,Bjork,9,2
+TN,Coldplay,8,3
+TN,Harmonia,7,4
+TN,Alliance Ethnik,7,5
+TX,Coldplay,46,1
+TX,Kings Of Leon,36,2
+TX,Florence + The Machine,24,3
+TX,OneRepublic,23,4
+TX,Dwight Yoakam,23,5
+UT,Lily Allen,7,1
+UT,Kings Of Leon,5,2
+UT,Lil Wayne / Eminem,4,3
+UT,Train,4,4
+UT,OneRepublic,4,5
+VA,Kings Of Leon,11,1
+VA,Dwight Yoakam,10,2
+VA,The Killers,8,3
+VA,Radiohead,8,4
+VA,Florence + The Machine,8,5
+VT,The Killers,2,1
+VT,Taylor Swift,2,2
+VT,Daft Punk,2,3
+VT,Faith No More,2,4
+VT,Alice In Chains,1,5
+WA,Kings Of Leon,10,1
+WA,Muse,8,2
+WA,Justin Bieber,8,3
+WA,Florence + The Machine,8,4
+WA,Radiohead,8,5
+WI,Kings Of Leon,13,1
+WI,John Mayer,8,2
+WI,Muse,7,3
+WI,Jack Johnson,6,4
+WI,Daft Punk,6,5
+WV,Creedence Clearwater Revival,4,1
+WV,Justin Bieber,3,2
+WV,Britney Spears,2,3
+WV,Taylor Swift,2,4
+WV,Linkin Park,2,5
+WY,Ron Carter,2,1
+WY,Adagio,1,2
+WY,Nico,1,3
+WY,Phil Collins,1,4
+WY,Perturbazione,1,5
