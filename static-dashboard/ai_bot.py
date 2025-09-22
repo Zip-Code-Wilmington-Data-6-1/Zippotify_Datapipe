@@ -580,7 +580,101 @@ class DataInsightBot:
         return self.generate_enhanced_insights()
     
     def answer_question(self, question):
-        """Legacy method - redirects to advanced question answering"""
+        """Intelligent question answering system with enhanced natural language processing"""
+        question_lower = question.lower().strip()
+        
+        # Direct question patterns with comprehensive answers
+        
+        # STATE COUNT QUESTIONS
+        if any(phrase in question_lower for phrase in ['how many states', 'number of states', 'states are there', 'count of states']):
+            if 'geographic_analysis' in self.csv_data and len(self.csv_data['geographic_analysis']) > 0:
+                total_states = len(self.csv_data['geographic_analysis'])
+                top_state = self.csv_data['geographic_analysis'].iloc[0]
+                return f"🌍 **{total_states} states** are represented in the dataset. The top state is **{top_state['state']}** with **{top_state['total_plays']:,} plays** across **{top_state['cities_count']} cities**."
+        
+        # STATE NAMES LIST QUESTIONS
+        if any(phrase in question_lower for phrase in ['names of states', 'list of states', 'what states', 'which states', 'state names', 'provide states']):
+            if 'geographic_analysis' in self.csv_data and len(self.csv_data['geographic_analysis']) > 0:
+                all_states = self.csv_data['geographic_analysis']['state'].tolist()
+                total_states = len(all_states)
+                
+                # Format as a readable list
+                if total_states <= 10:
+                    # Show all states if 10 or fewer
+                    states_list = ", ".join(all_states)
+                    return f"🌍 **All {total_states} states** in the dataset:\n{states_list}"
+                else:
+                    # Show top 10 states with note about total
+                    top_10_states = all_states[:10]
+                    states_list = ", ".join(top_10_states)
+                    return f"🌍 **Top 10 states** (out of {total_states} total):\n{states_list}\n\n*Full coverage includes {total_states} states total.*"
+        
+        # CITY COUNT QUESTIONS  
+        if any(phrase in question_lower for phrase in ['how many cities', 'number of cities', 'cities are there', 'count of cities']):
+            if 'geographic_analysis' in self.csv_data and len(self.csv_data['geographic_analysis']) > 0:
+                total_cities = sum(self.csv_data['geographic_analysis']['cities_count']) if 'cities_count' in self.csv_data['geographic_analysis'].columns else 0
+                return f"🏙️ **{total_cities:,} cities** are represented across all states in the dataset."
+        
+        # USER BEHAVIOR PATTERNS
+        if any(phrase in question_lower for phrase in ['user behavior', 'user patterns', 'behavior patterns', 'user insights']):
+            insights = []
+            # Add engagement insights
+            if 'engagement_by_level' in self.csv_data and len(self.csv_data['engagement_by_level']) > 0:
+                paid_users = self.csv_data['engagement_by_level'][self.csv_data['engagement_by_level']['level'] == 'paid']
+                free_users = self.csv_data['engagement_by_level'][self.csv_data['engagement_by_level']['level'] == 'free']
+                if not paid_users.empty and not free_users.empty:
+                    paid_plays = paid_users.iloc[0]['total_plays']
+                    free_plays = free_users.iloc[0]['total_plays']
+                    insights.append(f"💳 **Paid vs Free Users**: Paid users have {paid_plays:,} total plays, while free users have {free_plays:,} total plays")
+            
+            # Add geographic insights
+            if 'geographic_analysis' in self.csv_data:
+                top_3_states = self.csv_data['geographic_analysis'].head(3)
+                state_names = ", ".join(top_3_states['state'])
+                insights.append(f"🌍 **Geographic Concentration**: Top 3 states by activity are {state_names}")
+            
+            return "\n".join(insights) if insights else "📊 **User Behavior**: Users show diverse listening patterns across multiple states and subscription levels."
+        
+        # GEOGRAPHIC TRENDS  
+        if any(phrase in question_lower for phrase in ['geographic trends', 'location trends', 'regional patterns', 'geography']):
+            if 'geographic_analysis' in self.csv_data and len(self.csv_data['geographic_analysis']) > 0:
+                geo_data = self.csv_data['geographic_analysis']
+                top_state = geo_data.iloc[0]
+                total_states = len(geo_data)
+                avg_plays = geo_data['total_plays'].mean()
+                
+                return f"🗺️ **Geographic Trends**: Music consumption varies significantly by region. **{top_state['state']}** leads with **{top_state['total_plays']:,} plays**, while the average state has **{avg_plays:,.0f} plays**. Coverage spans **{total_states} states** with **{sum(geo_data['cities_count']):,} cities** total."
+        
+        # PAID VS FREE USERS
+        if any(phrase in question_lower for phrase in ['paid vs free', 'subscription', 'free vs paid', 'user levels']):
+            if 'engagement_by_level' in self.csv_data and len(self.csv_data['engagement_by_level']) > 0:
+                engagement = self.csv_data['engagement_by_level']
+                paid_row = engagement[engagement['level'] == 'paid']
+                free_row = engagement[engagement['level'] == 'free']
+                
+                if not paid_row.empty and not free_row.empty:
+                    paid_plays = paid_row.iloc[0]['total_plays']
+                    free_plays = free_row.iloc[0]['total_plays'] 
+                    return f"💳 **Subscription Analysis**: Paid users have **{paid_plays:,} total plays** vs free users with **{free_plays:,} total plays**. {'Paid users are more engaged' if paid_plays > free_plays else 'Free users dominate usage'}."
+        
+        # PEAK HOURS/TIME PATTERNS
+        if any(phrase in question_lower for phrase in ['peak hours', 'busy hours', 'time patterns', 'when most active']):
+            if 'hourly_patterns' in self.csv_data and len(self.csv_data['hourly_patterns']) > 0:
+                hourly_data = self.csv_data['hourly_patterns']
+                peak_hour = hourly_data.loc[hourly_data['play_count'].idxmax()]
+                return f"⏰ **Peak Hours**: Most activity occurs at **{int(peak_hour['hour']):02d}:00** with **{int(peak_hour['play_count']):,} plays**. Users are most active during standard listening hours."
+        
+        # TOP ARTISTS IN CALIFORNIA
+        if 'california' in question_lower and 'artist' in question_lower:
+            if 'geographic_analysis' in self.csv_data:
+                ca_data = self.csv_data['geographic_analysis'][self.csv_data['geographic_analysis']['state'] == 'CA']
+                if not ca_data.empty:
+                    ca_plays = ca_data.iloc[0]['total_plays']
+                    if 'top_artists' in self.csv_data:
+                        top_artist = self.csv_data['top_artists'].iloc[0]
+                        return f"🎤 **California Artists**: CA has **{ca_plays:,} total plays**. While I don't have state-specific artist breakdowns, the overall top artist **{top_artist['artist']}** likely performs well in CA too with **{top_artist['play_count']:,} plays** nationwide."
+        
+        # FALLBACK TO ORIGINAL SYSTEM FOR OTHER QUESTIONS
         return self.answer_advanced_question(question)
 
 # Initialize the enhanced bot

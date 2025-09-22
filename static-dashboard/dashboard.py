@@ -12,6 +12,22 @@ import time
 import random
 from ai_bot import DataInsightBot
 
+# --- INTENSE NEON COLOR PALETTE (PROJECTOR OPTIMIZED) ---
+NEON_COLORS = [
+    '#FF0080',  # Hot Pink - more intense
+    '#00FFFF',  # Electric Cyan - brighter
+    '#00FF00',  # Electric Lime - pure green
+    '#FF6600',  # Electric Orange - more vibrant
+    '#AA00FF',  # Electric Purple - more intense
+    '#FFFF00',  # Electric Yellow - pure yellow
+    '#FF0040',  # Electric Rose - brighter pink
+    '#0080FF',  # Electric Blue - more vibrant
+    '#40FF00',  # Electric Green - lime variant
+    '#FF4000',  # Electric Red-Orange - intense
+    '#8000FF',  # Electric Violet - deeper
+    '#FFD700'   # Electric Gold - maintained
+]
+
 # --- CONFIG ---
 st.set_page_config(
     page_title="🎧 TracktionAI Analytics Dashboard", 
@@ -19,42 +35,105 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Dark theme styling
+# Dark theme styling - PROJECTOR OPTIMIZED
 st.markdown("""
 <style>
     .stApp {
         background-color: #0e1117;
     }
     .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
     }
     .stMetric {
         background-color: #262730;
-        border: 1px solid #404040;
-        padding: 1rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 2px solid #404040;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    .stMetric .metric-label {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        color: #fafafa !important;
+    }
+    .stMetric .metric-value {
+        font-size: 36px !important;
+        font-weight: bold !important;
+        color: #00FFFF !important;
     }
     .stMarkdown h1 {
-        color: #fafafa;
-        font-size: 3rem !important;
-        margin-bottom: 0.5rem;
+        color: #fafafa !important;
+        font-size: 48px !important;
+        font-weight: bold !important;
+        margin-bottom: 1rem !important;
+        text-align: center !important;
     }
     .stMarkdown h2 {
-        color: #fafafa;
-        border-bottom: 2px solid #1f77b4;
-        padding-bottom: 0.5rem;
+        color: #fafafa !important;
+        font-size: 32px !important;
+        font-weight: bold !important;
+        border-bottom: 3px solid #00FFFF;
+        padding-bottom: 1rem !important;
+        margin-top: 2rem !important;
+        margin-bottom: 1.5rem !important;
     }
     .stMarkdown h3 {
-        color: #fafafa;
+        color: #fafafa !important;
+        font-size: 28px !important;
+        font-weight: bold !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+    .stMarkdown p, .stMarkdown div {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        line-height: 1.6 !important;
+        margin-bottom: 1rem !important;
+    }
+    .stSelectbox label, .stMultiselect label {
+        font-size: 20px !important;
+        font-weight: bold !important;
+        color: #fafafa !important;
+    }
+    .stButton button {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        padding: 1rem 2rem !important;
+        border-radius: 10px !important;
+        height: auto !important;
+    }
+    .stTextInput label {
+        font-size: 20px !important;
+        font-weight: bold !important;
+        color: #fafafa !important;
+    }
+    .stTextInput input {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        padding: 1rem !important;
+    }
+    .sidebar .sidebar-content {
+        background-color: #262730;
+        font-size: 16px !important;
+        font-weight: bold !important;
+    }
+    .sidebar .sidebar-content h2 {
+        font-size: 24px !important;
+        font-weight: bold !important;
+    }
+    .sidebar .sidebar-content .stMetric {
+        font-size: 18px !important;
+        font-weight: bold !important;
     }
     div[data-testid="metric-container"] {
         background-color: #262730;
-        border: 1px solid #404040;
-        padding: 1rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 2px solid #404040;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
     div[data-testid="metric-container"] > div {
         width: fit-content;
@@ -64,37 +143,67 @@ st.markdown("""
         width: fit-content;
         margin: auto;
     }
-    .sidebar .sidebar-content {
-        background-color: #262730;
+    div[data-testid="metric-container"] [data-testid="metric-value"] {
+        font-size: 36px !important;
+        font-weight: bold !important;
+        color: #00FFFF !important;
+    }
+    div[data-testid="metric-container"] [data-testid="metric-label"] {
+        font-size: 20px !important;
+        font-weight: bold !important;
+        color: #fafafa !important;
+    }
+    .stExpander .streamlit-expander-header {
+        font-size: 24px !important;
+        font-weight: bold !important;
+    }
+    .stTab [data-baseweb="tab"] {
+        font-size: 18px !important;
+        font-weight: bold !important;
+    }
+    .stSelectbox > div > div > div {
+        font-size: 18px !important;
+        font-weight: bold !important;
+    }
+    .stMultiSelect > div > div > div {
+        font-size: 18px !important;
+        font-weight: bold !important;
+    }
+    .stCheckbox > label > div {
+        font-size: 18px !important;
+        font-weight: bold !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # --- LOAD DATA ---
 def apply_dark_theme(fig):
-    """Apply consistent dark theme to plotly figures"""
+    """Apply consistent dark theme to plotly figures with large fonts for projector"""
     fig.update_layout(
         plot_bgcolor='#0e1117',
         paper_bgcolor='#0e1117',
         font_color='#fafafa',
-        title_font_color='#fafafa',
-        title_font_size=16,
-        font_size=12,
+        title_font_color='#00FFFF',
+        title_font_size=32,  # Much larger title
+        font_size=18,        # Much larger general font
+        font_family="Arial Black",  # Bold font family
         xaxis=dict(
             gridcolor='#404040',
             color='#fafafa',
-            tickfont=dict(color='#fafafa')
+            tickfont=dict(color='#fafafa', size=18, family='Arial Black'),
+            title=dict(font=dict(color='#fafafa', size=22, family='Arial Black'))
         ),
         yaxis=dict(
             gridcolor='#404040',
             color='#fafafa',
-            tickfont=dict(color='#fafafa')
+            tickfont=dict(color='#fafafa', size=18, family='Arial Black'),
+            title=dict(font=dict(color='#fafafa', size=22, family='Arial Black'))
         ),
         legend=dict(
             bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#fafafa')
+            font=dict(color='#fafafa', size=18, family='Arial Black')
         ),
-        margin=dict(l=0, r=0, t=40, b=0)
+        margin=dict(l=20, r=20, t=80, b=20)  # More margin for larger text
     )
     return fig
 
@@ -484,7 +593,7 @@ if 'show_qr_code' not in st.session_state:
 
 selected_analysis = st.sidebar.selectbox(
     "Choose Analysis View",
-    ["🏠 Overview", "🌍 Regional Analysis", "👥 Demographics", "🎵 Music Trends", "📊 Engagement Metrics"]
+    ["🏠 Overview", "🌍 Regional Analysis", "👥 Demographics", "🎵 Music Trends", "📊 Engagement Metrics", "🤖 TracktionAi Chat"]
 )
 
 # Reset image displays when user selects a dropdown option
@@ -596,19 +705,20 @@ else:
             fig_songs = px.bar(top_songs_df, x='play_count', y='song_display', orientation='h',
                               title='Top 10 Most Played Songs',
                               color='play_count',
-                              color_continuous_scale='Viridis',
+                              color_continuous_scale=NEON_COLORS,
                               custom_data=['artist'])
             fig_songs.update_layout(
                 yaxis={'categoryorder':'total ascending', 'title': None},
                 xaxis_title='Number of Plays',
                 showlegend=False,
-                coloraxis_showscale=False
+                coloraxis_showscale=False,
+                height=600  # Taller for better visibility
             )
             fig_songs.update_traces(
                 hovertemplate='<b>%{y}</b><br><b>Artist:</b> %{customdata[0]}<br>%{x:,} plays<extra></extra>',
                 texttemplate='%{x:,}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=11)
+                textfont=dict(color='#fafafa', size=16, family='Arial Black')  # Larger, bold text labels
             )
             fig_songs = apply_dark_theme(fig_songs)
             st.plotly_chart(fig_songs, use_container_width=True)
@@ -624,18 +734,19 @@ else:
             fig_artists = px.bar(top_artists_df, x='play_count', y='artist_display', orientation='h',
                                title='Top 10 Most Popular Artists',
                                color='play_count',
-                               color_continuous_scale='Plasma')
+                               color_continuous_scale=NEON_COLORS)
             fig_artists.update_layout(
                 yaxis={'categoryorder':'total ascending', 'title': None},
                 xaxis_title='Number of Plays',
                 showlegend=False,
-                coloraxis_showscale=False
+                coloraxis_showscale=False,
+                height=600  # Taller for better visibility
             )
             fig_artists.update_traces(
                 hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
                 texttemplate='%{x:,}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=11)
+                textfont=dict(color='#fafafa', size=16, family='Arial Black')  # Larger, bold text
             )
             fig_artists = apply_dark_theme(fig_artists)
             st.plotly_chart(fig_artists, use_container_width=True)
@@ -648,12 +759,12 @@ else:
             genre_df = pd.DataFrame(content_analytics['genre_popularity'])
             fig_genre = px.pie(genre_df, names='genre', values='play_count',
                               title='Music Genre Popularity',
-                              color_discrete_sequence=px.colors.qualitative.Set3)
+                              color_discrete_sequence=NEON_COLORS)
             fig_genre.update_traces(
                 textposition='inside',
                 textinfo='percent+label',
                 hovertemplate='<b>%{label}</b><br>%{value:,} plays<br>%{percent}<extra></extra>',
-                textfont=dict(size=12)
+                textfont=dict(size=16, family='Arial Black')  # Larger, bold text
             )
             fig_genre = apply_dark_theme(fig_genre)
             st.plotly_chart(fig_genre, use_container_width=True)
@@ -664,18 +775,19 @@ else:
             fig_hourly = px.bar(hourly_df, x='hour', y='play_count',
                                title='Listening Activity by Hour',
                                color='play_count',
-                               color_continuous_scale='Turbo')
+                               color_continuous_scale=NEON_COLORS)
             fig_hourly.update_layout(
                 xaxis_title='Hour of Day', 
                 yaxis_title='Total Plays',
                 coloraxis_showscale=False,
-                xaxis=dict(tickmode='linear', tick0=0, dtick=2)
+                xaxis=dict(tickmode='linear', tick0=0, dtick=2),
+                height=500  # Taller chart
             )
             fig_hourly.update_traces(
                 hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>',
                 texttemplate='%{y:,}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=10)
+                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
             )
             fig_hourly = apply_dark_theme(fig_hourly)
             st.plotly_chart(fig_hourly, use_container_width=True)
@@ -704,18 +816,19 @@ else:
             fig_dominance = px.bar(x=top_10_states['state'], y=top_10_states['total_plays'],
                                   title='Top 10 States by Total Plays',
                                   color=top_10_states['total_plays'],
-                                  color_continuous_scale='Cividis')
+                                  color_continuous_scale=NEON_COLORS)
             fig_dominance.update_layout(
                 xaxis_title='State', 
                 yaxis_title='Total Plays',
                 coloraxis_showscale=False,
-                xaxis=dict(tickangle=45)
+                xaxis=dict(tickangle=45),
+                height=600  # Taller chart
             )
             fig_dominance.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
                 texttemplate='%{y:,.0f}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=11)
+                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
             )
             fig_dominance = apply_dark_theme(fig_dominance)
             st.plotly_chart(fig_dominance, use_container_width=True)
@@ -746,7 +859,7 @@ else:
                     fig_compare = px.bar(filtered_geo, x='state', y='total_plays',
                                        title='Selected States Comparison',
                                        color='total_plays',
-                                       color_continuous_scale='Viridis')
+                                       color_continuous_scale=NEON_COLORS)
                     fig_compare = apply_dark_theme(fig_compare)
                     st.plotly_chart(fig_compare, use_container_width=True)
                 else:
@@ -759,18 +872,19 @@ else:
                         title='Top 15 States by Total Plays',
                         hover_data=['cities_count'],
                         color='total_plays',
-                        color_continuous_scale='Inferno')
+                        color_continuous_scale=NEON_COLORS)
         fig_geo.update_layout(
             yaxis={'categoryorder':'total ascending'},
             xaxis_title='Total Plays',
             yaxis_title=None,
-            coloraxis_showscale=False
+            coloraxis_showscale=False,
+            height=700  # Much taller for better visibility
         )
         fig_geo.update_traces(
             hovertemplate='<b>%{y}</b><br>%{x:,} total plays<br>%{customdata[0]} cities<extra></extra>',
             texttemplate='%{x:,}',
             textposition='outside',
-            textfont=dict(color='#fafafa', size=10)
+            textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
         )
         fig_geo = apply_dark_theme(fig_geo)
         st.plotly_chart(fig_geo, use_container_width=True)
@@ -880,8 +994,8 @@ else:
             age_df = csv_data['age_distribution']
             fig_age = px.histogram(age_df, x='age', y='user_count', nbins=20,
                                   title='User Age Distribution',
-                                  color_discrete_sequence=['#1f77b4'])
-            fig_age.update_layout(xaxis_title='Age', yaxis_title='Number of Users')
+                                  color_discrete_sequence=NEON_COLORS)
+            fig_age.update_layout(xaxis_title='Age', yaxis_title='Number of Users', height=500)
             fig_age.update_traces(
                 hovertemplate='<b>Age %{x}</b><br>%{y} users<extra></extra>',
                 opacity=0.8
@@ -904,12 +1018,12 @@ else:
             
             fig_gen = px.pie(gen_counts, names='generation', values='user_count',
                             title='Users by Generation',
-                            color_discrete_sequence=px.colors.qualitative.Pastel)
+                            color_discrete_sequence=NEON_COLORS)
             fig_gen.update_traces(
                 textposition='inside',
                 textinfo='percent+label',
                 hovertemplate='<b>%{label}</b><br>%{value:,} users<br>%{percent}<extra></extra>',
-                textfont=dict(size=12)
+                textfont=dict(size=16, family='Arial Black')  # Larger, bold text
             )
             fig_gen = apply_dark_theme(fig_gen)
             st.plotly_chart(fig_gen, use_container_width=True)
@@ -937,13 +1051,13 @@ else:
             fig_engagement = px.bar(engagement_df, x='level', y='total_plays',
                                    title='Total Plays by Subscription Level',
                                    color='total_plays',
-                                   color_continuous_scale='RdYlBu_r')
-            fig_engagement.update_layout(coloraxis_showscale=False)
+                                   color_continuous_scale=NEON_COLORS)
+            fig_engagement.update_layout(coloraxis_showscale=False, height=500)
             fig_engagement.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} total plays<extra></extra>',
                 texttemplate='%{y:,}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=12)
+                textfont=dict(color='#fafafa', size=16, family='Arial Black')  # Larger, bold text
             )
             fig_engagement = apply_dark_theme(fig_engagement)
             st.plotly_chart(fig_engagement, use_container_width=True)
@@ -952,13 +1066,13 @@ else:
             fig_avg_duration = px.bar(engagement_df, x='level', y='avg_song_duration',
                                      title='Average Song Duration by Subscription Level',
                                      color='avg_song_duration',
-                                     color_continuous_scale='Viridis')
-            fig_avg_duration.update_layout(coloraxis_showscale=False)
+                                     color_continuous_scale=NEON_COLORS)
+            fig_avg_duration.update_layout(coloraxis_showscale=False, height=500)
             fig_avg_duration.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:.1f} seconds avg<extra></extra>',
                 texttemplate='%{y:.1f}s',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=12)
+                textfont=dict(color='#fafafa', size=16, family='Arial Black')  # Larger, bold text
             )
             fig_avg_duration = apply_dark_theme(fig_avg_duration)
             st.plotly_chart(fig_avg_duration, use_container_width=True)
@@ -975,14 +1089,14 @@ else:
             fig_genre_rank = px.bar(genre_df.head(10), x='genre', y='play_count',
                                    title='Top 10 Genres by Play Count',
                                    color='play_count',
-                                   color_continuous_scale='Spectral')
+                                   color_continuous_scale=NEON_COLORS)
             fig_genre_rank.update_xaxes(tickangle=45)
-            fig_genre_rank.update_layout(coloraxis_showscale=False)
+            fig_genre_rank.update_layout(coloraxis_showscale=False, height=600)
             fig_genre_rank.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
                 texttemplate='%{y:,}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=10)
+                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
             )
             fig_genre_rank = apply_dark_theme(fig_genre_rank)
             st.plotly_chart(fig_genre_rank, use_container_width=True)
@@ -994,9 +1108,9 @@ else:
                                        size='play_count', 
                                        title='Artist Performance Bubble Chart',
                                        color='play_count',
-                                       color_continuous_scale='Plasma')
+                                       color_continuous_scale=NEON_COLORS)
             fig_artist_perf.update_xaxes(tickangle=45)
-            fig_artist_perf.update_layout(coloraxis_showscale=False)
+            fig_artist_perf.update_layout(coloraxis_showscale=False, height=600)
             fig_artist_perf.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>'
             )
@@ -1013,10 +1127,10 @@ else:
         fig_songs_detailed = px.bar(top_songs_df, x='play_count', y='song_label', orientation='h',
                                    title='Top 20 Songs with Artist Names',
                                    color='play_count',
-                                   color_continuous_scale='Viridis')
+                                   color_continuous_scale=NEON_COLORS)
         fig_songs_detailed.update_layout(
             yaxis={'categoryorder':'total ascending'}, 
-            height=700,
+            height=800,  # Much taller for better visibility
             coloraxis_showscale=False,
             xaxis_title='Number of Plays',
             yaxis_title=None
@@ -1025,7 +1139,7 @@ else:
             hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
             texttemplate='%{x:,}',
             textposition='outside',
-            textfont=dict(color='#fafafa', size=9)
+            textfont=dict(color='#fafafa', size=12, family='Arial Black')  # Larger, bold text
         )
         fig_songs_detailed = apply_dark_theme(fig_songs_detailed)
         st.plotly_chart(fig_songs_detailed, use_container_width=True)
@@ -1050,14 +1164,14 @@ else:
             fig_weekday = px.bar(weekday_avg, x='weekday', y='active_users',
                                title='Average Daily Active Users by Weekday',
                                color='active_users',
-                               color_continuous_scale='Blues')
+                               color_continuous_scale=NEON_COLORS)
             fig_weekday.update_xaxes(tickangle=45)
-            fig_weekday.update_layout(coloraxis_showscale=False)
+            fig_weekday.update_layout(coloraxis_showscale=False, height=600)
             fig_weekday.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,.0f} avg users<extra></extra>',
                 texttemplate='%{y:,.0f}',
                 textposition='outside',
-                textfont=dict(color='#fafafa', size=11)
+                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
             )
             fig_weekday = apply_dark_theme(fig_weekday)
             st.plotly_chart(fig_weekday, use_container_width=True)
@@ -1068,10 +1182,10 @@ else:
             fig_hourly_detailed = px.line(hourly_df, x='hour', y='play_count', markers=True,
                                         title='Listening Activity Throughout the Day',
                                         line_shape='spline')
-            fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays')
+            fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays', height=600)
             fig_hourly_detailed.update_traces(
-                line=dict(color='#ff7f0e', width=3),
-                marker=dict(size=8, color='#1f77b4'),
+                line=dict(color='#ff7f0e', width=4),  # Thicker line
+                marker=dict(size=10, color='#1f77b4'),  # Larger markers
                 hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>'
             )
             fig_hourly_detailed = apply_dark_theme(fig_hourly_detailed)
@@ -1099,163 +1213,79 @@ else:
         with col3:
             st.metric("Most Active Day", most_active_row['date'].strftime('%m/%d'), f"{int(most_active_row['active_users']):,} users")
 
-# --- ENHANCED AI INSIGHTS BOT ---
-st.divider()
-st.subheader("🤖 Enhanced AI Music Analytics Assistant")
-st.markdown("*Ask natural language questions about user behavior, sessions, devices, and more using both processed and raw event data!*")
+    elif selected_analysis == "🤖 TracktionAi Chat":
+        st.subheader("🤖 TracktionAI Assistant")
 
-# Initialize enhanced bot and chat history
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if 'bot' not in st.session_state:
-    # Initialize enhanced bot with both CSV and full 11GB raw data
-    raw_data_paths = {
-        'listen_events': '/Users/iara/Projects/Zippotify_Datapipe/output/listen_events',
-        'auth_events': '/Users/iara/Projects/Zippotify_Datapipe/output/auth_events',
-        'page_view_events': '/Users/iara/Projects/Zippotify_Datapipe/output/page_view_events',
-        'status_change_events': '/Users/iara/Projects/Zippotify_Datapipe/output/status_change_events'
-    }
-    st.session_state.bot = DataInsightBot(csv_data, raw_data_paths)
-
-# AI Data Source Summary in sidebar
-st.sidebar.divider()
-st.sidebar.markdown("**🔗 AI Data Sources (11GB Dataset)**")
-if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
-    for data_type, df in st.session_state.bot.raw_data.items():
-        if not df.empty:
-            full_size = st.session_state.bot.full_dataset_sizes.get(data_type, 0)
-            if full_size > len(df):
-                st.sidebar.metric(f"{data_type.replace('_', ' ').title()}", 
-                                f"{len(df):,} sampled", 
-                                f"from {full_size:,} total")
-            else:
-                st.sidebar.metric(f"{data_type.replace('_', ' ').title()}", f"{len(df):,} events")
-else:
-    st.sidebar.info("11GB raw event data loading...")
-
-# Display AI capabilities and data summary
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    st.markdown("### 🎯 AI Capabilities (11GB Dataset)")
-    st.markdown("""
-    **Enhanced Analytics Available:**
-    - 📊 Session analysis from 10.7M+ listening events
-    - 📱 Device usage patterns across full dataset  
-    - 🔐 Authentication trends from 142K+ auth events
-    - 📈 Advanced engagement metrics and retention
-    - 🎵 Deep music listening patterns (36K+ artists)
-    - 🌐 Geographic analysis across 1,789+ cities
-    """)
-
-with col2:
-    if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
-        st.markdown("### 📊 11GB Dataset Summary")
-        total_full_events = sum(st.session_state.bot.full_dataset_sizes.values())
-        total_sampled_events = sum(len(df) for df in st.session_state.bot.raw_data.values() if not df.empty)
-        st.metric("Total Dataset Events", f"{total_full_events:,}", f"{total_sampled_events:,} sampled")
-        st.metric("Data Sources", f"CSV + {len(st.session_state.bot.raw_data)} JSONL files")
-        
-        # Generate and display enhanced insights
-        with st.spinner("🤖 Generating enhanced insights from 11GB dataset..."):
-            enhanced_insights = st.session_state.bot.generate_enhanced_insights()
-            st.markdown("**🚀 Smart Insights (11GB Analysis):**")
-            for insight in enhanced_insights[:3]:
-                st.markdown(f"• {insight}")
-
-# Enhanced conversational interface
-st.markdown("### 💬 Conversational Analytics")
-
-# Example questions specific to enhanced capabilities
-st.markdown("**💡 Try asking about:**")
-example_questions = [
-    "What are the user session patterns?",
-    "How do authentication events correlate with listening?", 
-    "What device types are most popular?",
-    "Show me user engagement trends",
-    "What are the peak usage hours across platforms?",
-    "How do page views relate to music consumption?"
-]
-
-cols = st.columns(3)
-for i, question in enumerate(example_questions):
-    col = cols[i % 3]
-    with col:
-        if st.button(f"📝 {question}", key=f"example_{i}", help="Click to ask"):
-            st.session_state.chat_history.append(("user", question))
-            with st.spinner("🤖 Analyzing your data..."):
-                response = st.session_state.bot.answer_question(question)
-                st.session_state.chat_history.append(("bot", response))
-                st.rerun()
-
-# Main chat interface
-col1, col2 = st.columns([4, 1])
-
-with col1:
-    user_input = st.text_input("🗣️ Ask anything about your data:", 
-                             placeholder="e.g., What patterns do you see in user sessions?",
-                             key="user_question")
-
-with col2:
-    if st.button("� Ask AI", type="primary"):
-        if user_input:
-            st.session_state.chat_history.append(("user", user_input))
-            with st.spinner("🤖 Processing with enhanced analytics..."):
-                response = st.session_state.bot.answer_question(user_input)
-                st.session_state.chat_history.append(("bot", response))
-                st.rerun()
-
-# Display enhanced chat history
-if st.session_state.chat_history:
-    st.markdown("### 💬 Conversation History")
-    
-    # Show recent messages with enhanced styling
-    recent_messages = st.session_state.chat_history[-8:]  # Show more messages
-    
-    for i, (sender, message) in enumerate(recent_messages):
-        if sender == "user":
-            st.markdown(f"""
-            <div style="background-color: #0e1117; padding: 12px; border-radius: 10px; margin: 8px 0; border-left: 4px solid #1f77b4;">
-                <strong>🧑‍💻 You:</strong> {message}
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div style="background-color: #262730; padding: 12px; border-radius: 10px; margin: 8px 0; border-left: 4px solid #ff7f0e;">
-                <strong>🤖 Enhanced AI:</strong><br>{message}
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Enhanced chat controls
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🗑️ Clear Chat"):
+        # Initialize bot and chat history
+        if 'chat_history' not in st.session_state:
             st.session_state.chat_history = []
-            st.rerun()
-    with col2:
-        if st.button("� Generate Summary"):
-            summary = st.session_state.bot.generate_conversation_summary(st.session_state.chat_history)
-            st.session_state.chat_history.append(("bot", f"📋 **Conversation Summary:**\n{summary}"))
-            st.rerun()
-    with col3:
-        if st.button("🎯 Smart Suggestion"):
-            suggestion = st.session_state.bot.get_smart_suggestion(st.session_state.chat_history)
-            st.session_state.chat_history.append(("bot", f"💡 **Smart Suggestion:**\n{suggestion}"))
-            st.rerun()
+        if 'bot' not in st.session_state:
+            raw_data_paths = {
+                'listen_events': '/Users/iara/Projects/Zippotify_Datapipe/output/listen_events',
+                'auth_events': '/Users/iara/Projects/Zippotify_Datapipe/output/auth_events',
+                'page_view_events': '/Users/iara/Projects/Zippotify_Datapipe/output/page_view_events',
+                'status_change_events': '/Users/iara/Projects/Zippotify_Datapipe/output/status_change_events'
+            }
+            with st.spinner("🔄 Loading 11GB dataset for AI analysis..."):
+                st.session_state.bot = DataInsightBot(csv_data, raw_data_paths)
 
-# Welcome message for new users
-if not st.session_state.chat_history:
-    st.markdown("### 🌟 Welcome to Enhanced AI Analytics!")
-    st.info("👋 I'm your enhanced AI assistant with access to both processed CSV data and raw EventSim JSONL files. I can provide deep insights about user sessions, device usage, authentication patterns, and much more!")
-    
-    # Show sample capabilities
-    if hasattr(st.session_state.bot, 'raw_data') and st.session_state.bot.raw_data:
-        st.markdown("**🔥 Ready to analyze:**")
-        for data_type, df in st.session_state.bot.raw_data.items():
-            if not df.empty:
-                st.markdown(f"• **{data_type.replace('_', ' ').title()}**: {len(df):,} events ready for analysis")
-    
-    st.markdown("*Start by asking a question above or clicking one of the example questions!*")
+        # Main chat interface
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            user_question = st.text_input("Ask anything about your data:", 
+                                         placeholder="e.g., How many states are there?",
+                                         key="ai_question_input")
+        with col2:
+            ask_button = st.button("🤖 Ask TracktionAi", type="primary", key="ask_tracktionai_button")
+
+        # Process question
+        if ask_button and user_question:
+            st.session_state.chat_history.append(("user", user_question))
+            with st.spinner("🤖 Analyzing your data..."):
+                try:
+                    response = st.session_state.bot.answer_question(user_question)
+                    st.session_state.chat_history.append(("bot", response))
+                    st.rerun()
+                except Exception as e:
+                    st.session_state.chat_history.append(("bot", "Sorry, I encountered an error. Please try rephrasing."))
+
+        # Example questions
+        st.markdown("### 💡 Try These Questions:")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("How many states?", key="ex1"):
+                question = "How many states are there?"
+                st.session_state.chat_history.append(("user", question))
+                with st.spinner("🤖 Analyzing..."):
+                    response = st.session_state.bot.answer_question(question)
+                    st.session_state.chat_history.append(("bot", response))
+                    st.rerun()
+        with col2:
+            if st.button("User behavior patterns?", key="ex2"):
+                question = "What are user behavior patterns?"
+                st.session_state.chat_history.append(("user", question))
+                with st.spinner("🤖 Analyzing..."):
+                    response = st.session_state.bot.answer_question(question)
+                    st.session_state.chat_history.append(("bot", response))
+                    st.rerun()
+        with col3:
+            if st.button("Peak usage hours?", key="ex3"):
+                question = "What are the peak hours?"
+                st.session_state.chat_history.append(("user", question))
+                with st.spinner("🤖 Analyzing..."):
+                    response = st.session_state.bot.answer_question(question)
+                    st.session_state.chat_history.append(("bot", response))
+                    st.rerun()
+
+        # Conversation history
+        if st.session_state.chat_history:
+            st.markdown("### 💬 Recent Conversation")
+            for sender, message in st.session_state.chat_history[-4:]:
+                if sender == "user":
+                    st.markdown(f"**You:** {message}")
+                else:
+                    st.markdown(f"**🤖 TracktionAi:** {message}")
+                    st.markdown("---")
 
 # --- FOOTER ---
 st.divider()
