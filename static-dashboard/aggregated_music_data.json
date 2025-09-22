@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2025-09-21T18:14:53.249187",
+    "generated_at": "2025-09-22T16:55:08.621296",
     "total_users": 4070,
     "total_listen_events": 10714491,
     "total_page_views": 12259101,
@@ -11,8 +11,8 @@
     "unique_artists": 36420,
     "unique_songs": 276547,
     "date_range": {
-      "start": "2023-09-01",
-      "end": "2023-09-30"
+      "start": "2023-09-12",
+      "end": "2025-09-10"
     }
   },
   "user_analytics": {

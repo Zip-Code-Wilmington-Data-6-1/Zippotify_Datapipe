@@ -516,7 +516,7 @@ def load_aggregated_data():
     """Load the comprehensive aggregated music data"""
     try:
         # Load main aggregated JSON
-        with open('../aggregated_music_data.json', 'r') as f:
+        with open('aggregated_music_data.json', 'r') as f:
             aggregated_data = json.load(f)
         
         # Load individual CSV files for detailed analysis
@@ -574,16 +574,14 @@ st.divider()
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("🎛️ Dashboard Filters")
 
-# Add Tech Stack and QR Code buttons at the top left of sidebar
-col1, col2 = st.sidebar.columns(2)
-with col1:
-    if st.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technology Stack"):
-        st.session_state.show_tech_stack = True
-        st.session_state.show_qr_code = False
-with col2:
-    if st.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
-        st.session_state.show_qr_code = True  
-        st.session_state.show_tech_stack = False
+# Add Tech Stack and QR Code buttons stacked vertically
+if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technology Stack"):
+    st.session_state.show_tech_stack = True
+    st.session_state.show_qr_code = False
+
+if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
+    st.session_state.show_qr_code = True  
+    st.session_state.show_tech_stack = False
 
 # Initialize session state if not exists
 if 'show_tech_stack' not in st.session_state:
@@ -675,19 +673,57 @@ else:
         
         # --- DAILY ACTIVITY TREND ---
         st.subheader("📈 Daily Activity Trends")
-        daily_df = pd.DataFrame(user_analytics['daily_active_users'])
+        # Use CSV data with correct 2-year span
+        daily_df = csv_data['daily_active'].copy()
         daily_df['date'] = pd.to_datetime(daily_df['date'])
         
-        fig_daily = px.line(daily_df, x='date', y='active_users', 
-                           title='Daily Active Users Over Time',
-                           markers=True,
-                           line_shape='spline')
-        fig_daily.update_traces(
-            line=dict(color='#1f77b4', width=3),
-            marker=dict(size=8, color='#ff7f0e'),
-            hovertemplate='<b>%{x|%B %d, %Y}</b><br>%{y:,} users<extra></extra>'
+        # Split data into two periods: Sep 12, 2023 - Sep 12, 2024 and Sep 12, 2024 - Sep 10, 2025
+        split_date = pd.to_datetime('2024-09-12')
+        period_1 = daily_df[daily_df['date'] < split_date].copy()
+        period_2 = daily_df[daily_df['date'] >= split_date].copy()
+        
+        # Create normalized dates for parallel display (day of year from Sep 12)
+        period_1 = period_1.reset_index(drop=True)
+        period_2 = period_2.reset_index(drop=True)
+        period_1['days_from_start'] = range(len(period_1))
+        period_2['days_from_start'] = range(len(period_2))
+        
+        # Create figure with two parallel lines
+        fig_daily = go.Figure()
+        
+        # Add first period line (2023-2024)
+        fig_daily.add_trace(go.Scatter(
+            x=period_1['days_from_start'], 
+            y=period_1['active_users'],
+            mode='lines+markers',
+            name='2023-2024 Period',
+            line=dict(color=NEON_COLORS[0], width=3),  # Hot Pink
+            marker=dict(size=6, color=NEON_COLORS[0]),
+            hovertemplate='<b>Day %{x}</b><br>%{y:,} users<br><b>Period:</b> 2023-2024<extra></extra>'
+        ))
+        
+        # Add second period line (2024-2025)
+        fig_daily.add_trace(go.Scatter(
+            x=period_2['days_from_start'], 
+            y=period_2['active_users'],
+            mode='lines+markers',
+            name='2024-2025 Period',
+            line=dict(color=NEON_COLORS[1], width=3),  # Electric Cyan
+            marker=dict(size=6, color=NEON_COLORS[1]),
+            hovertemplate='<b>Day %{x}</b><br>%{y:,} users<br><b>Period:</b> 2024-2025<extra></extra>'
+        ))
+        
+        fig_daily.update_layout(
+            title='Daily Active Users Over Time (2-Year Parallel Comparison)',
+            xaxis_title='Days from Start (Sep 12)', 
+            yaxis_title='Active Users',
+            legend=dict(
+                font=dict(size=20, family='Arial Black', color='#fafafa'),  # Bold, large legend
+                bgcolor='rgba(0,0,0,0)',
+                bordercolor='#fafafa',
+                borderwidth=2
+            )
         )
-        fig_daily.update_layout(xaxis_title='Date', yaxis_title='Active Users')
         fig_daily = apply_dark_theme(fig_daily)
         st.plotly_chart(fig_daily, use_container_width=True)
         
@@ -712,7 +748,7 @@ else:
                 xaxis_title='Number of Plays',
                 showlegend=False,
                 coloraxis_showscale=False,
-                height=600  # Taller for better visibility
+                height=480  # 20% smaller (600 * 0.8)
             )
             fig_songs.update_traces(
                 hovertemplate='<b>%{y}</b><br><b>Artist:</b> %{customdata[0]}<br>%{x:,} plays<extra></extra>',
@@ -740,7 +776,7 @@ else:
                 xaxis_title='Number of Plays',
                 showlegend=False,
                 coloraxis_showscale=False,
-                height=600  # Taller for better visibility
+                height=480  # 20% smaller (600 * 0.8)
             )
             fig_artists.update_traces(
                 hovertemplate='<b>%{y}</b><br>%{x:,} plays<extra></extra>',
@@ -781,7 +817,7 @@ else:
                 yaxis_title='Total Plays',
                 coloraxis_showscale=False,
                 xaxis=dict(tickmode='linear', tick0=0, dtick=2),
-                height=500  # Taller chart
+                height=400  # 20% smaller (500 * 0.8)
             )
             fig_hourly.update_traces(
                 hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>',
@@ -822,7 +858,7 @@ else:
                 yaxis_title='Total Plays',
                 coloraxis_showscale=False,
                 xaxis=dict(tickangle=45),
-                height=600  # Taller chart
+                height=480  # 20% smaller (600 * 0.8)
             )
             fig_dominance.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
@@ -878,7 +914,7 @@ else:
             xaxis_title='Total Plays',
             yaxis_title=None,
             coloraxis_showscale=False,
-            height=700  # Much taller for better visibility
+            height=560  # 20% smaller (700 * 0.8)
         )
         fig_geo.update_traces(
             hovertemplate='<b>%{y}</b><br>%{x:,} total plays<br>%{customdata[0]} cities<extra></extra>',
@@ -948,7 +984,7 @@ else:
         st.info(f"🔍 **Currently showing**: {display_day} listening patterns")
         
         heatmap = create_listening_heatmap(display_day, csv_data['geographic_analysis'])
-        st_folium(heatmap, width=700, height=450, key=f"heatmap_{display_day}")
+        st_folium(heatmap, width=560, height=360, key=f"heatmap_{display_day}")  # 20% smaller (700x450 -> 560x360)
         
         # Show color mapping for current day
         st.markdown(f"** Expected Colors for {display_day}:**")
@@ -995,7 +1031,7 @@ else:
             fig_age = px.histogram(age_df, x='age', y='user_count', nbins=20,
                                   title='User Age Distribution',
                                   color_discrete_sequence=NEON_COLORS)
-            fig_age.update_layout(xaxis_title='Age', yaxis_title='Number of Users', height=500)
+            fig_age.update_layout(xaxis_title='Age', yaxis_title='Number of Users', height=400)  # 20% smaller (500 * 0.8)
             fig_age.update_traces(
                 hovertemplate='<b>Age %{x}</b><br>%{y} users<extra></extra>',
                 opacity=0.8
@@ -1052,7 +1088,7 @@ else:
                                    title='Total Plays by Subscription Level',
                                    color='total_plays',
                                    color_continuous_scale=NEON_COLORS)
-            fig_engagement.update_layout(coloraxis_showscale=False, height=500)
+            fig_engagement.update_layout(coloraxis_showscale=False, height=400)  # 20% smaller (500 * 0.8)
             fig_engagement.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} total plays<extra></extra>',
                 texttemplate='%{y:,}',
@@ -1067,7 +1103,7 @@ else:
                                      title='Average Song Duration by Subscription Level',
                                      color='avg_song_duration',
                                      color_continuous_scale=NEON_COLORS)
-            fig_avg_duration.update_layout(coloraxis_showscale=False, height=500)
+            fig_avg_duration.update_layout(coloraxis_showscale=False, height=400)  # 20% smaller (500 * 0.8)
             fig_avg_duration.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:.1f} seconds avg<extra></extra>',
                 texttemplate='%{y:.1f}s',
@@ -1091,7 +1127,7 @@ else:
                                    color='play_count',
                                    color_continuous_scale=NEON_COLORS)
             fig_genre_rank.update_xaxes(tickangle=45)
-            fig_genre_rank.update_layout(coloraxis_showscale=False, height=600)
+            fig_genre_rank.update_layout(coloraxis_showscale=False, height=480)  # 20% smaller (600 * 0.8)
             fig_genre_rank.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
                 texttemplate='%{y:,}',
@@ -1110,7 +1146,7 @@ else:
                                        color='play_count',
                                        color_continuous_scale=NEON_COLORS)
             fig_artist_perf.update_xaxes(tickangle=45)
-            fig_artist_perf.update_layout(coloraxis_showscale=False, height=600)
+            fig_artist_perf.update_layout(coloraxis_showscale=False, height=480)  # 20% smaller (600 * 0.8)
             fig_artist_perf.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>'
             )
@@ -1130,7 +1166,7 @@ else:
                                    color_continuous_scale=NEON_COLORS)
         fig_songs_detailed.update_layout(
             yaxis={'categoryorder':'total ascending'}, 
-            height=800,  # Much taller for better visibility
+            height=640,  # 20% smaller (800 * 0.8)
             coloraxis_showscale=False,
             xaxis_title='Number of Plays',
             yaxis_title=None
@@ -1166,7 +1202,7 @@ else:
                                color='active_users',
                                color_continuous_scale=NEON_COLORS)
             fig_weekday.update_xaxes(tickangle=45)
-            fig_weekday.update_layout(coloraxis_showscale=False, height=600)
+            fig_weekday.update_layout(coloraxis_showscale=False, height=480)  # 20% smaller (600 * 0.8)
             fig_weekday.update_traces(
                 hovertemplate='<b>%{x}</b><br>%{y:,.0f} avg users<extra></extra>',
                 texttemplate='%{y:,.0f}',
@@ -1182,7 +1218,7 @@ else:
             fig_hourly_detailed = px.line(hourly_df, x='hour', y='play_count', markers=True,
                                         title='Listening Activity Throughout the Day',
                                         line_shape='spline')
-            fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays', height=600)
+            fig_hourly_detailed.update_layout(xaxis_title='Hour of Day', yaxis_title='Total Plays', height=480)  # 20% smaller (600 * 0.8)
             fig_hourly_detailed.update_traces(
                 line=dict(color='#ff7f0e', width=4),  # Thicker line
                 marker=dict(size=10, color='#1f77b4'),  # Larger markers
