@@ -1,15 +1,13 @@
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import streamlit as st
+import folium
+import time
 import json
 from datetime import datetime
-import folium
 from folium import plugins
 from streamlit_folium import st_folium
-import time
-import random
 from ai_bot import DataInsightBot
 
 # --- INTENSE NEON COLOR PALETTE (PROJECTOR OPTIMIZED) ---
@@ -73,7 +71,7 @@ st.markdown("""
     }
     .stMarkdown h2 {
         color: #fafafa !important;
-        font-size: 32px !important;
+        font-size: 45px !important;
         font-weight: bold !important;
         border-bottom: 3px solid #00FFFF;
         padding-bottom: 1rem !important;
@@ -106,14 +104,14 @@ st.markdown("""
         height: auto !important;
     }
     .stTextInput label {
-        font-size: 20px !important;
+        font-size: 28px !important;
         font-weight: bold !important;
         color: #fafafa !important;
     }
     .stTextInput input {
-        font-size: 18px !important;
+        font-size: 25px !important;
         font-weight: bold !important;
-        padding: 1rem !important;
+        padding: 1.5rem !important;
     }
     .sidebar .sidebar-content {
         background-color: #262730;
@@ -172,6 +170,19 @@ st.markdown("""
     .stCheckbox > label > div {
         font-size: 18px !important;
         font-weight: bold !important;
+    }
+    
+    /* Specific styling for TracktionAI Chat section */
+    div[data-testid="stTextInput"] label {
+        font-size: 28px !important;
+        font-weight: bold !important;
+        color: #00FFFF !important;
+    }
+    
+    div[data-testid="stTextInput"] input {
+        font-size: 25px !important;
+        font-weight: bold !important;
+        padding: 1.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -516,23 +527,23 @@ def load_aggregated_data():
     """Load the comprehensive aggregated music data"""
     try:
         # Load main aggregated JSON
-        with open('aggregated_music_data.json', 'r') as f:
+        with open('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_music_data.json', 'r') as f:
             aggregated_data = json.load(f)
         
         # Load individual CSV files for detailed analysis
         csv_data = {
-            'daily_active': pd.read_csv('aggregated_data/daily_active_users.csv', encoding='utf-8'),
-            'age_distribution': pd.read_csv('aggregated_data/age_distribution.csv', encoding='utf-8'),
-            'genre_popularity': pd.read_csv('aggregated_data/genre_popularity.csv', encoding='utf-8'),
-            'top_artists': pd.read_csv('aggregated_data/top_artists.csv', encoding='utf-8'),
-            'top_songs': pd.read_csv('aggregated_data/top_songs.csv', encoding='utf-8'),
-            'engagement_by_level': pd.read_csv('aggregated_data/engagement_by_level.csv', encoding='utf-8'),
-            'geographic_analysis': pd.read_csv('aggregated_data/geographic_analysis.csv', encoding='utf-8'),
-            'hourly_patterns': pd.read_csv('aggregated_data/hourly_patterns.csv', encoding='utf-8'),
-            'top_songs_by_state': pd.read_csv('aggregated_data/top_songs_by_state.csv', encoding='utf-8'),
-            'top_song_per_state': pd.read_csv('aggregated_data/top_song_per_state.csv', encoding='utf-8'),
-            'top_artists_by_state': pd.read_csv('aggregated_data/top_artists_by_state.csv', encoding='utf-8'),
-            'top_artist_per_state': pd.read_csv('aggregated_data/top_artist_per_state.csv', encoding='utf-8')
+            'daily_active': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/daily_active_users.csv', encoding='utf-8'),
+            'age_distribution': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/age_distribution.csv', encoding='utf-8'),
+            'genre_popularity': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/genre_popularity.csv', encoding='utf-8'),
+            'top_artists': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/top_artists.csv', encoding='utf-8'),
+            'top_songs': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/top_songs.csv', encoding='utf-8'),
+            'engagement_by_level': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/engagement_by_level.csv', encoding='utf-8'),
+            'geographic_analysis': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/geographic_analysis.csv', encoding='utf-8'),
+            'hourly_patterns': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/hourly_patterns.csv', encoding='utf-8'),
+            'top_songs_by_state': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/top_songs_by_state.csv', encoding='utf-8'),
+            'top_song_per_state': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/top_song_per_state.csv', encoding='utf-8'),
+            'top_artists_by_state': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/top_artists_by_state.csv', encoding='utf-8'),
+            'top_artist_per_state': pd.read_csv('/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/aggregated_data/top_artist_per_state.csv', encoding='utf-8')
         }
         
         # Calculate avg_song_duration for engagement_by_level
@@ -569,14 +580,14 @@ if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technol
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
     st.session_state.just_clicked_button = True
 
-if st.sidebar.button("� Data Model", key="data_model_btn", help="View Star Schema Data Model"):
+if st.sidebar.button("📊 Data Model", key="data_model_btn", help="View Star Schema Data Model"):
     st.session_state.show_data_model = True
     st.session_state.show_tech_stack = False
     st.session_state.show_qr_code = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
     st.session_state.just_clicked_button = True
 
-if st.sidebar.button("�📱 QR Code", key="qr_code_btn", help="View QR Code"):
+if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
     st.session_state.show_qr_code = True  
     st.session_state.show_tech_stack = False
     st.session_state.show_data_model = False
@@ -633,113 +644,68 @@ show_images = st.session_state.get('show_tech_stack', False) or st.session_state
 if show_images:
     # Show only the requested image
     if st.session_state.get('show_tech_stack', False):
-        st.image("../TechStack.png", use_container_width=True)
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/TechStack.png", use_container_width=True)
     elif st.session_state.get('show_data_model', False):
-        st.image("../StarSchemaDataModel.png", use_container_width=True)
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/StarSchemaDataModel.png", use_container_width=True)
     elif st.session_state.get('show_qr_code', False):
-        st.image("QRCodeForRepo.png", use_container_width=True)
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/QRCodeForRepo.png", use_container_width=True)
 else:
     # Show normal dashboard with header and content
     # --- HEADER ---
     st.title("🎧 TracktionAi Analytics Dashboard")
-    st.markdown("**Phase 1 Static Dashboard** • Real-time insights from music streaming data")
-
-    # Data generation info
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown(f"📊 **Data Summary**: {metadata['total_users']:,} users • {metadata['total_listen_events']:,} listening events • {metadata['date_range']['start']} to {metadata['date_range']['end']}")
-    with col2:
-        st.markdown(f"*Generated: {datetime.fromisoformat(metadata['generated_at']).strftime('%m/%d/%Y %H:%M')}*")
 
     st.divider()
 
     st.sidebar.divider()
-    st.sidebar.markdown("**📈 Quick Stats**")
-    st.sidebar.metric("Total Users", f"{metadata['total_users']:,}")
-    st.sidebar.metric("Total Songs Played", f"{metadata['total_listen_events']:,}")
-    st.sidebar.metric("Unique Genres", f"{len(content_analytics['genre_popularity'])}")
+    # Removed Quick Stats section
+    # st.sidebar.markdown("**📈 Quick Stats**")
+    # st.sidebar.metric("Total Users", f"{metadata['total_users']:,}")
+    # st.sidebar.metric("Total Songs Played", f"{metadata['total_listen_events']:,}")
+    # st.sidebar.metric("Unique Genres", f"{len(content_analytics['genre_popularity'])}")
 
     # === MAIN DASHBOARD CONTENT ===
     if selected_analysis == "🏠 Overview":
-        # --- KPI METRICS ---
-        st.subheader("📊 Key Performance Indicators")
         
-        col1, col2, col3, col4 = st.columns(4)
+        # --- GENRE & HOURLY PATTERNS ---
+        col1, col2 = st.columns(2)
+        
         with col1:
-            avg_dau = sum([day['active_users'] for day in user_analytics['daily_active_users']]) / len(user_analytics['daily_active_users'])
-            st.metric("Avg Daily Active Users", f"{int(avg_dau):,}")
-            
-        with col2:
-            paid_users = user_analytics['subscription_levels']['paid']['unique_users']
-            free_users = user_analytics['subscription_levels']['free']['unique_users']
-            paid_percent = (paid_users / (paid_users + free_users)) * 100
-            st.metric("Paid Subscribers", f"{paid_percent:.1f}%")
-            
-        with col3:
-            avg_plays_per_session = content_analytics['average_plays_per_session']
-            st.metric("Avg Songs/Session", f"{avg_plays_per_session:.1f}")
-            
-        with col4:
-            top_genre_plays = content_analytics['genre_popularity'][0]['play_count']
-            st.metric("Most Popular Genre", f"{content_analytics['genre_popularity'][0]['genre'].title()} ({top_genre_plays:,})")
-        
-        st.divider()
-        
-        # --- DAILY ACTIVITY TREND ---
-        st.subheader("📈 Daily Activity Trends")
-        # Use CSV data with correct 2-year span
-        daily_df = csv_data['daily_active'].copy()
-        daily_df['date'] = pd.to_datetime(daily_df['date'])
-        
-        # Split data into two periods: Sep 12, 2023 - Sep 12, 2024 and Sep 12, 2024 - Sep 10, 2025
-        split_date = pd.to_datetime('2024-09-12')
-        period_1 = daily_df[daily_df['date'] < split_date].copy()
-        period_2 = daily_df[daily_df['date'] >= split_date].copy()
-        
-        # Create normalized dates for parallel display (day of year from Sep 12)
-        period_1 = period_1.reset_index(drop=True)
-        period_2 = period_2.reset_index(drop=True)
-        period_1['days_from_start'] = range(len(period_1))
-        period_2['days_from_start'] = range(len(period_2))
-        
-        # Create figure with two parallel lines
-        fig_daily = go.Figure()
-        
-        # Add first period line (2023-2024)
-        fig_daily.add_trace(go.Scatter(
-            x=period_1['days_from_start'], 
-            y=period_1['active_users'],
-            mode='lines+markers',
-            name='2023-2024 Period',
-            line=dict(color=NEON_COLORS[0], width=3),  # Hot Pink
-            marker=dict(size=6, color=NEON_COLORS[0]),
-            hovertemplate='<b>Day %{x}</b><br>%{y:,} users<br><b>Period:</b> 2023-2024<extra></extra>'
-        ))
-        
-        # Add second period line (2024-2025)
-        fig_daily.add_trace(go.Scatter(
-            x=period_2['days_from_start'], 
-            y=period_2['active_users'],
-            mode='lines+markers',
-            name='2024-2025 Period',
-            line=dict(color=NEON_COLORS[1], width=3),  # Electric Cyan
-            marker=dict(size=6, color=NEON_COLORS[1]),
-            hovertemplate='<b>Day %{x}</b><br>%{y:,} users<br><b>Period:</b> 2024-2025<extra></extra>'
-        ))
-        
-        fig_daily.update_layout(
-            title='Daily Active Users Over Time (2-Year Parallel Comparison)',
-            xaxis_title='Days from Start (Sep 12)', 
-            yaxis_title='Active Users',
-            legend=dict(
-                font=dict(size=20, family='Arial Black', color='#fafafa'),  # Bold, large legend
-                bgcolor='rgba(0,0,0,0)',
-                bordercolor='#fafafa',
-                borderwidth=2
+            st.subheader("🎨 Genre Distribution")
+            genre_df = pd.DataFrame(content_analytics['genre_popularity'])
+            fig_genre = px.pie(genre_df, names='genre', values='play_count',
+                              title='Music Genre Popularity',
+                              color_discrete_sequence=NEON_COLORS)
+            fig_genre.update_traces(
+                textposition='inside',
+                textinfo='percent+label',
+                hovertemplate='<b>%{label}</b><br>%{value:,} plays<br>%{percent}<extra></extra>',
+                textfont=dict(size=16, family='Arial Black')  # Larger, bold text
             )
-        )
-        fig_daily = apply_dark_theme(fig_daily)
-        st.plotly_chart(fig_daily, use_container_width=True)
+            fig_genre = apply_dark_theme(fig_genre)
+            st.plotly_chart(fig_genre, use_container_width=True)
+        
+        with col2:
+            st.subheader("🕐 Hourly Listening Patterns")
+            hourly_df = csv_data['hourly_patterns']
+            fig_hourly = px.bar(hourly_df, x='hour', y='play_count',
+                               title='Listening Activity by Hour',
+                               color='play_count',
+                               color_continuous_scale=NEON_COLORS)
+            fig_hourly.update_layout(
+                xaxis_title='Hour of Day', 
+                yaxis_title='Total Plays',
+                coloraxis_showscale=False,
+                xaxis=dict(tickmode='linear', tick0=0, dtick=2),
+                height=400  # 20% smaller (500 * 0.8)
+            )
+            fig_hourly.update_traces(
+                hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>',
+                texttemplate='%{y:,}',
+                textposition='outside',
+                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
+            )
+            fig_hourly = apply_dark_theme(fig_hourly)
+            st.plotly_chart(fig_hourly, use_container_width=True)
         
         # --- TOP CONTENT ROW ---
         col1, col2 = st.columns(2)
@@ -801,46 +767,61 @@ else:
             fig_artists = apply_dark_theme(fig_artists)
             st.plotly_chart(fig_artists, use_container_width=True)
         
-        # --- GENRE & HOURLY PATTERNS ---
-        col1, col2 = st.columns(2)
+        # --- DAILY ACTIVITY TREND ---
+        st.subheader("📈 Daily Activity Trends")
+        # Use CSV data with correct 2-year span
+        daily_df = csv_data['daily_active'].copy()
+        daily_df['date'] = pd.to_datetime(daily_df['date'])
         
-        with col1:
-            st.subheader("🎨 Genre Distribution")
-            genre_df = pd.DataFrame(content_analytics['genre_popularity'])
-            fig_genre = px.pie(genre_df, names='genre', values='play_count',
-                              title='Music Genre Popularity',
-                              color_discrete_sequence=NEON_COLORS)
-            fig_genre.update_traces(
-                textposition='inside',
-                textinfo='percent+label',
-                hovertemplate='<b>%{label}</b><br>%{value:,} plays<br>%{percent}<extra></extra>',
-                textfont=dict(size=16, family='Arial Black')  # Larger, bold text
-            )
-            fig_genre = apply_dark_theme(fig_genre)
-            st.plotly_chart(fig_genre, use_container_width=True)
+        # Split data into two periods: Sep 12, 2023 - Sep 12, 2024 and Sep 12, 2024 - Sep 10, 2025
+        split_date = pd.to_datetime('2024-09-12')
+        period_1 = daily_df[daily_df['date'] < split_date].copy()
+        period_2 = daily_df[daily_df['date'] >= split_date].copy()
         
-        with col2:
-            st.subheader("🕐 Hourly Listening Patterns")
-            hourly_df = csv_data['hourly_patterns']
-            fig_hourly = px.bar(hourly_df, x='hour', y='play_count',
-                               title='Listening Activity by Hour',
-                               color='play_count',
-                               color_continuous_scale=NEON_COLORS)
-            fig_hourly.update_layout(
-                xaxis_title='Hour of Day', 
-                yaxis_title='Total Plays',
-                coloraxis_showscale=False,
-                xaxis=dict(tickmode='linear', tick0=0, dtick=2),
-                height=400  # 20% smaller (500 * 0.8)
+        # Create normalized dates for parallel display (day of year from Sep 12)
+        period_1 = period_1.reset_index(drop=True)
+        period_2 = period_2.reset_index(drop=True)
+        period_1['days_from_start'] = range(len(period_1))
+        period_2['days_from_start'] = range(len(period_2))
+        
+        # Create figure with two parallel lines
+        fig_daily = go.Figure()
+        
+        # Add first period line (2023-2024)
+        fig_daily.add_trace(go.Scatter(
+            x=period_1['days_from_start'], 
+            y=period_1['active_users'],
+            mode='lines+markers',
+            name='2023-2024 Period',
+            line=dict(color=NEON_COLORS[0], width=3),  # Hot Pink
+            marker=dict(size=6, color=NEON_COLORS[0]),
+            hovertemplate='<b>Day %{x}</b><br>%{y:,} users<br><b>Period:</b> 2023-2024<extra></extra>'
+        ))
+        
+        # Add second period line (2024-2025)
+        fig_daily.add_trace(go.Scatter(
+            x=period_2['days_from_start'], 
+            y=period_2['active_users'],
+            mode='lines+markers',
+            name='2024-2025 Period',
+            line=dict(color=NEON_COLORS[1], width=3),  # Electric Cyan
+            marker=dict(size=6, color=NEON_COLORS[1]),
+            hovertemplate='<b>Day %{x}</b><br>%{y:,} users<br><b>Period:</b> 2024-2025<extra></extra>'
+        ))
+        
+        fig_daily.update_layout(
+            title='Daily Active Users Over Time (2-Year Parallel Comparison)',
+            xaxis_title='Days from Start (Sep 12)', 
+            yaxis_title='Active Users',
+            legend=dict(
+                font=dict(size=20, family='Arial Black', color='#fafafa'),  # Bold, large legend
+                bgcolor='rgba(0,0,0,0)',
+                bordercolor='#fafafa',
+                borderwidth=2
             )
-            fig_hourly.update_traces(
-                hovertemplate='<b>%{x}:00</b><br>%{y:,} plays<extra></extra>',
-                texttemplate='%{y:,}',
-                textposition='outside',
-                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
-            )
-            fig_hourly = apply_dark_theme(fig_hourly)
-            st.plotly_chart(fig_hourly, use_container_width=True)
+        )
+        fig_daily = apply_dark_theme(fig_daily)
+        st.plotly_chart(fig_daily, use_container_width=True)
 
     elif selected_analysis == "🌍 Regional Analysis":
         st.subheader("🗺️ Regional Music Preferences")
@@ -1266,10 +1247,10 @@ else:
 
         # Example questions
         st.markdown("### 💡 Try These Questions:")
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            if st.button("How many states?", key="ex1"):
-                question = "How many states are there?"
+            if st.button("Top genres this year?", key="ex4"):
+                question = "What are the top genres this year?"
                 st.session_state.chat_history.append(("user", question))
                 with st.spinner("🤖 Analyzing..."):
                     response = st.session_state.bot.answer_question(question)
@@ -1291,6 +1272,14 @@ else:
                     response = st.session_state.bot.answer_question(question)
                     st.session_state.chat_history.append(("bot", response))
                     st.rerun()
+        with col4:
+            if st.button("Which state has the most paid users?", key="ex5"):
+                question = "Which state has the most paid users?"
+                st.session_state.chat_history.append(("user", question))
+                with st.spinner("🤖 Analyzing..."):
+                    response = st.session_state.bot.answer_question(question)
+                    st.session_state.chat_history.append(("bot", response))
+                    st.rerun()
 
         # Conversation history
         if st.session_state.chat_history:
@@ -1301,19 +1290,3 @@ else:
                 else:
                     st.markdown(f"**🤖 TracktionAi:** {message}")
                     st.markdown("---")
-
-# --- FOOTER ---
-st.divider()
-st.markdown("---")
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown("**🎧 TracktionAI Analytics**")
-    st.markdown("Phase 1 Static Dashboard")
-with col2:
-    st.markdown("**📊 Data Coverage**")
-    st.markdown(f"{metadata['date_range']['start']} to {metadata['date_range']['end']}")
-with col3:
-    st.markdown("**🔧 Tech Stack**")
-    st.markdown("Python • Pandas • Plotly • Streamlit")
-
-st.caption("📈 Dashboard built with comprehensive ETL pipeline and synthetic data enrichment")
