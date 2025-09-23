@@ -558,19 +558,6 @@ user_analytics = aggregated_data['user_analytics']
 content_analytics = aggregated_data['content_analytics']
 engagement_analytics = aggregated_data['engagement_analytics']
 
-# --- HEADER ---
-st.title("🎧 TracktionAi Analytics Dashboard")
-st.markdown("**Phase 1 Static Dashboard** • Real-time insights from music streaming data")
-
-# Data generation info
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown(f"📊 **Data Summary**: {metadata['total_users']:,} users • {metadata['total_listen_events']:,} listening events • {metadata['date_range']['start']} to {metadata['date_range']['end']}")
-with col2:
-    st.markdown(f"*Generated: {datetime.fromisoformat(metadata['generated_at']).strftime('%m/%d/%Y %H:%M')}*")
-
-st.divider()
-
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("🎛️ Dashboard Filters")
 
@@ -578,10 +565,14 @@ st.sidebar.header("🎛️ Dashboard Filters")
 if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technology Stack"):
     st.session_state.show_tech_stack = True
     st.session_state.show_qr_code = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
+    st.session_state.just_clicked_button = True
 
 if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
     st.session_state.show_qr_code = True  
     st.session_state.show_tech_stack = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
+    st.session_state.just_clicked_button = True
 
 # Initialize session state if not exists
 if 'show_tech_stack' not in st.session_state:
@@ -589,63 +580,86 @@ if 'show_tech_stack' not in st.session_state:
 if 'show_qr_code' not in st.session_state:
     st.session_state.show_qr_code = False
 
-selected_analysis = st.sidebar.selectbox(
-    "Choose Analysis View",
-    ["🏠 Overview", "🌍 Regional Analysis", "👥 Demographics", "🎵 Music Trends", "📊 Engagement Metrics", "🤖 TracktionAi Chat"]
-)
+# Check if images are currently showing
+show_images_currently = st.session_state.get('show_tech_stack', False) or st.session_state.get('show_qr_code', False)
 
-# Reset image displays when user selects a dropdown option
-if st.session_state.get('show_tech_stack', False) or st.session_state.get('show_qr_code', False):
-    # Only reset if user is actively using the dropdown (not on first load)
-    if 'previous_analysis' in st.session_state and st.session_state.previous_analysis != selected_analysis:
-        st.session_state.show_tech_stack = False
-        st.session_state.show_qr_code = False
-
-st.session_state.previous_analysis = selected_analysis
-
-# State filter for regional analysis
-if selected_analysis == "🌍 Regional Analysis":
-    if 'geographic_analysis' in csv_data and len(csv_data['geographic_analysis']) > 0:
-        available_states = sorted(csv_data['geographic_analysis']['state'].unique())
-        selected_states = st.sidebar.multiselect(
-            "Select States", 
-            available_states, 
-            default=available_states[:10]
-        )
-    else:
-        available_states = []
-        selected_states = []
-        st.sidebar.warning("No state data available")
-
-st.sidebar.divider()
-st.sidebar.markdown("**📈 Quick Stats**")
-st.sidebar.metric("Total Users", f"{metadata['total_users']:,}")
-st.sidebar.metric("Total Songs Played", f"{metadata['total_listen_events']:,}")
-st.sidebar.metric("Unique Genres", f"{len(content_analytics['genre_popularity'])}")
-
-# === MAIN DASHBOARD CONTENT ===
-
-# Handle Tech Stack and QR Code full-screen displays
-if st.session_state.get('show_tech_stack', False):
-    try:
-        st.image("../TechStack.png", use_container_width=True)
-    except Exception as e:
-        st.error("Tech Stack image not found. Please ensure TechStack.png is in the project directory.")
-    if st.button("🔙 Back to Dashboard"):
-        st.session_state.show_tech_stack = False
-        st.rerun()
-
-elif st.session_state.get('show_qr_code', False):
-    try:
-        st.image("QRCodeForRepo.png", use_container_width=True)
-    except Exception as e:
-        st.error("QR Code image not found. Please ensure QRCodeForRepo.png is in the dashboard directory.")
-    if st.button("🔙 Back to Dashboard"):
-        st.session_state.show_qr_code = False
-        st.rerun()
-
+# Create dropdown with different behavior when images are showing
+if show_images_currently:
+    # When images are showing, any dropdown selection should clear images
+    selected_analysis = st.sidebar.selectbox(
+        "Choose Analysis View", 
+        ["🏠 Overview", "🌍 Regional Analysis", "👥 Demographics", "🎵 Music Trends", "📊 Engagement Metrics", "🤖 TracktionAi Chat"],
+        key="dropdown_from_image"
+    )
+    # Remove automatic clearing - let the main logic handle it
 else:
-    # Normal dashboard content when no image is being displayed
+    # Normal dropdown behavior when no images are showing
+    selected_analysis = st.sidebar.selectbox(
+        "Choose Analysis View",
+        ["🏠 Overview", "🌍 Regional Analysis", "👥 Demographics", "🎵 Music Trends", "📊 Engagement Metrics", "🤖 TracktionAi Chat"],
+        key="analysis_dropdown"
+    )
+
+# Logic for handling button clicks
+just_clicked_button = st.session_state.get('just_clicked_button', False)
+
+# Clear the button click flag for next iteration
+st.session_state.just_clicked_button = False
+
+# Add logic to clear images when dropdown is used from image state
+# This happens after the dropdown selection, preventing state inconsistency
+if show_images_currently and not just_clicked_button:
+    # User selected something from dropdown while images were showing - clear images
+    st.session_state.show_tech_stack = False
+    st.session_state.show_qr_code = False
+
+# === HANDLE IMAGE DISPLAYS OR DASHBOARD CONTENT ===
+
+# Check if we should show images or dashboard content  
+show_images = st.session_state.get('show_tech_stack', False) or st.session_state.get('show_qr_code', False)
+
+if show_images:
+    # Show only the requested image
+    if st.session_state.get('show_tech_stack', False):
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/TechStack.png", use_container_width=True)
+    elif st.session_state.get('show_qr_code', False):
+        st.image("QRCodeForRepo.png", use_container_width=True)
+else:
+    # Show normal dashboard with header and content
+    # --- HEADER ---
+    st.title("🎧 TracktionAi Analytics Dashboard")
+    st.markdown("**Phase 1 Static Dashboard** • Real-time insights from music streaming data")
+
+    # Data generation info
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"📊 **Data Summary**: {metadata['total_users']:,} users • {metadata['total_listen_events']:,} listening events • {metadata['date_range']['start']} to {metadata['date_range']['end']}")
+    with col2:
+        st.markdown(f"*Generated: {datetime.fromisoformat(metadata['generated_at']).strftime('%m/%d/%Y %H:%M')}*")
+
+    st.divider()
+
+    # State filter for regional analysis (always available in sidebar)
+    if selected_analysis == "🌍 Regional Analysis":
+        if 'geographic_analysis' in csv_data and len(csv_data['geographic_analysis']) > 0:
+            available_states = sorted(csv_data['geographic_analysis']['state'].unique())
+            selected_states = st.sidebar.multiselect(
+                "Select States", 
+                available_states, 
+                default=available_states[:10]
+            )
+        else:
+            available_states = []
+            selected_states = []
+            st.sidebar.warning("No state data available")
+
+    st.sidebar.divider()
+    st.sidebar.markdown("**📈 Quick Stats**")
+    st.sidebar.metric("Total Users", f"{metadata['total_users']:,}")
+    st.sidebar.metric("Total Songs Played", f"{metadata['total_listen_events']:,}")
+    st.sidebar.metric("Unique Genres", f"{len(content_analytics['genre_popularity'])}")
+
+    # === MAIN DASHBOARD CONTENT ===
     if selected_analysis == "🏠 Overview":
         # --- KPI METRICS ---
         st.subheader("📊 Key Performance Indicators")
