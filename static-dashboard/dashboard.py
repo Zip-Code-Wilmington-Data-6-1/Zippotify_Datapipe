@@ -561,27 +561,38 @@ engagement_analytics = aggregated_data['engagement_analytics']
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("🎛️ Dashboard Filters")
 
-# Add Tech Stack and QR Code buttons stacked vertically
+# Add Tech Stack, Data Model, and QR Code buttons stacked vertically
 if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technology Stack"):
     st.session_state.show_tech_stack = True
+    st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
     st.session_state.just_clicked_button = True
 
-if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
+if st.sidebar.button("� Data Model", key="data_model_btn", help="View Star Schema Data Model"):
+    st.session_state.show_data_model = True
+    st.session_state.show_tech_stack = False
+    st.session_state.show_qr_code = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
+    st.session_state.just_clicked_button = True
+
+if st.sidebar.button("�📱 QR Code", key="qr_code_btn", help="View QR Code"):
     st.session_state.show_qr_code = True  
     st.session_state.show_tech_stack = False
+    st.session_state.show_data_model = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
     st.session_state.just_clicked_button = True
 
 # Initialize session state if not exists
 if 'show_tech_stack' not in st.session_state:
     st.session_state.show_tech_stack = False
+if 'show_data_model' not in st.session_state:
+    st.session_state.show_data_model = False
 if 'show_qr_code' not in st.session_state:
     st.session_state.show_qr_code = False
 
 # Check if images are currently showing
-show_images_currently = st.session_state.get('show_tech_stack', False) or st.session_state.get('show_qr_code', False)
+show_images_currently = st.session_state.get('show_tech_stack', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
 
 # Create dropdown with different behavior when images are showing
 if show_images_currently:
@@ -611,17 +622,20 @@ st.session_state.just_clicked_button = False
 if show_images_currently and not just_clicked_button:
     # User selected something from dropdown while images were showing - clear images
     st.session_state.show_tech_stack = False
+    st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
 
 # === HANDLE IMAGE DISPLAYS OR DASHBOARD CONTENT ===
 
 # Check if we should show images or dashboard content  
-show_images = st.session_state.get('show_tech_stack', False) or st.session_state.get('show_qr_code', False)
+show_images = st.session_state.get('show_tech_stack', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
 
 if show_images:
     # Show only the requested image
     if st.session_state.get('show_tech_stack', False):
-        st.image("/Users/iara/Projects/Zippotify_Datapipe/TechStack.png", use_container_width=True)
+        st.image("../TechStack.png", use_container_width=True)
+    elif st.session_state.get('show_data_model', False):
+        st.image("../StarSchemaDataModel.png", use_container_width=True)
     elif st.session_state.get('show_qr_code', False):
         st.image("QRCodeForRepo.png", use_container_width=True)
 else:
@@ -638,20 +652,6 @@ else:
         st.markdown(f"*Generated: {datetime.fromisoformat(metadata['generated_at']).strftime('%m/%d/%Y %H:%M')}*")
 
     st.divider()
-
-    # State filter for regional analysis (always available in sidebar)
-    if selected_analysis == "🌍 Regional Analysis":
-        if 'geographic_analysis' in csv_data and len(csv_data['geographic_analysis']) > 0:
-            available_states = sorted(csv_data['geographic_analysis']['state'].unique())
-            selected_states = st.sidebar.multiselect(
-                "Select States", 
-                available_states, 
-                default=available_states[:10]
-            )
-        else:
-            available_states = []
-            selected_states = []
-            st.sidebar.warning("No state data available")
 
     st.sidebar.divider()
     st.sidebar.markdown("**📈 Quick Stats**")
@@ -845,99 +845,64 @@ else:
     elif selected_analysis == "🌍 Regional Analysis":
         st.subheader("🗺️ Regional Music Preferences")
         
-        # --- REGIONAL ANALYSIS ---
-        st.markdown("### 🏆 Most Active States by Listening Activity")
+        # --- TOP STATES BY PLAY COUNT ---
+        st.markdown("### 🎯 Top States by Play Count")
         
-        # Use geographic analysis data (available and populated)
-        geo_data = csv_data['geographic_analysis'].copy()
+        # Define the data from user specifications
+        top_states_data = {
+            'state': ['CA', 'TX', 'FL', 'NY', 'IL', 'OH', 'GA', 'VA', 'NC', 'PA'],
+            'total_plays': [1375197, 850516, 679088, 651757, 516412, 458111, 416776, 387557, 348008, 336565],
+            'cities_count': [228, 154, 106, 135, 121, 98, 84, 74, 90, 106]
+        }
         
-        # Display top states
-        col1, col2 = st.columns(2)
+        df_top_states = pd.DataFrame(top_states_data)
         
-        with col1:
-            st.markdown("**🎯 Top States by Play Count**")
-            display_states = geo_data.nlargest(10, 'total_plays')
-            for _, row in display_states.iterrows():
-                st.markdown(f"**{row['state']}**: {row['total_plays']:,} plays ({row['cities_count']} cities)")
-        
-        with col2:
-            st.markdown("**📊 Regional Activity Distribution**")
-            top_10_states = geo_data.head(10)
-            fig_dominance = px.bar(x=top_10_states['state'], y=top_10_states['total_plays'],
-                                  title='Top 10 States by Total Plays',
-                                  color=top_10_states['total_plays'],
-                                  color_continuous_scale=NEON_COLORS)
-            fig_dominance.update_layout(
-                xaxis_title='State', 
-                yaxis_title='Total Plays',
-                coloraxis_showscale=False,
-                xaxis=dict(tickangle=45),
-                height=480  # 20% smaller (600 * 0.8)
-            )
-            fig_dominance.update_traces(
-                hovertemplate='<b>%{x}</b><br>%{y:,} plays<extra></extra>',
-                texttemplate='%{y:,.0f}',
-                textposition='outside',
-                textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
-            )
-            fig_dominance = apply_dark_theme(fig_dominance)
-            st.plotly_chart(fig_dominance, use_container_width=True)
-        
-        st.divider()
-        
-        # --- STATE-SPECIFIC ANALYSIS ---
-        if selected_states:
-            st.markdown(f"### 🎵 Detailed Analysis for Selected States")
-            
-            # Filter geographic data for selected states
-            filtered_geo = geo_data[geo_data['state'].isin(selected_states)]
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**🌆 State Activity Summary**")
-                for _, row in filtered_geo.iterrows():
-                    st.markdown(f"**{row['state']}:**")
-                    st.markdown(f"  • Total Plays: {row['total_plays']:,}")
-                    st.markdown(f"  • Cities: {row['cities_count']}")
-                    st.markdown(f"  • Avg Plays/City: {row['total_plays']/row['cities_count']:,.0f}")
-            
-            with col2:
-                st.markdown("**📊 Comparative Analysis**")
-                if len(filtered_geo) > 1:
-                    # Create comparison chart
-                    fig_compare = px.bar(filtered_geo, x='state', y='total_plays',
-                                       title='Selected States Comparison',
-                                       color='total_plays',
-                                       color_continuous_scale=NEON_COLORS)
-                    fig_compare = apply_dark_theme(fig_compare)
-                    st.plotly_chart(fig_compare, use_container_width=True)
-                else:
-                    st.markdown("Select multiple states to see comparison.")
-        
-        # --- GEOGRAPHIC CONCENTRATION ---
-        st.subheader("📍 Geographic Activity Hotspots")
-        geo_df = csv_data['geographic_analysis'].head(15)
-        fig_geo = px.bar(geo_df, x='total_plays', y='state', orientation='h',
-                        title='Top 15 States by Total Plays',
-                        hover_data=['cities_count'],
-                        color='total_plays',
-                        color_continuous_scale=NEON_COLORS)
-        fig_geo.update_layout(
-            yaxis={'categoryorder':'total ascending'},
-            xaxis_title='Total Plays',
-            yaxis_title=None,
-            coloraxis_showscale=False,
-            height=560  # 20% smaller (700 * 0.8)
+        # Create horizontal bar chart following dashboard format
+        fig_top_states = px.bar(
+            df_top_states, 
+            x='total_plays', 
+            y='state',
+            orientation='h',
+            title='Top 10 States by Total Plays',
+            color='total_plays',
+            color_continuous_scale=NEON_COLORS,
+            custom_data=['cities_count']
         )
-        fig_geo.update_traces(
-            hovertemplate='<b>%{y}</b><br>%{x:,} total plays<br>%{customdata[0]} cities<extra></extra>',
+        
+        # Apply consistent styling with other dashboard charts
+        fig_top_states.update_layout(
+            yaxis={'categoryorder':'total ascending', 'title': None},
+            xaxis_title='Number of Plays',
+            showlegend=False,
+            coloraxis_showscale=False,
+            height=480  # 20% smaller (600 * 0.8)
+        )
+        fig_top_states.update_traces(
+            hovertemplate='<b>%{y}</b><br>%{x:,} plays<br>%{customdata[0]} cities<extra></extra>',
             texttemplate='%{x:,}',
             textposition='outside',
             textfont=dict(color='#fafafa', size=14, family='Arial Black')  # Larger, bold text
         )
-        fig_geo = apply_dark_theme(fig_geo)
-        st.plotly_chart(fig_geo, use_container_width=True)
+        fig_top_states = apply_dark_theme(fig_top_states)
+        st.plotly_chart(fig_top_states, use_container_width=True)
+        
+        # Summary metrics row
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("🥇 Leading State", "California", f"{df_top_states.iloc[0]['total_plays']:,} plays")
+        with col2:
+            st.metric("🏙️ Most Cities", f"CA ({df_top_states.iloc[0]['cities_count']} cities)", "Geographic leader")
+        with col3:
+            total_plays = df_top_states['total_plays'].sum()
+            st.metric("📊 Top 10 Total", f"{total_plays:,}", "Combined plays")
+        with col4:
+            total_cities = df_top_states['cities_count'].sum()
+            st.metric("🌆 Cities Covered", f"{total_cities}", "Total coverage")
+        
+        st.divider()
+        
+        # Use geographic analysis data for state-specific analysis
+        geo_data = csv_data['geographic_analysis'].copy()
         
         # --- ANIMATED LISTENING HEATMAP ---
         st.subheader("🔥 Weekly Listening Heatmap Animation")
