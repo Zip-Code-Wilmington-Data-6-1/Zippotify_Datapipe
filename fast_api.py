@@ -530,6 +530,66 @@ def get_user_profiles(db: Session = Depends(get_db)):
         for u in users
     ]
 
+# Search for artists (for autocomplete/search functionality)
+@app.get("/search/artists")
+def search_artists(q: str, db: Session = Depends(get_db)):
+    """Search for artists by name"""
+    results = (
+        db.query(DimArtist.artist_name)
+        .filter(DimArtist.artist_name.ilike(f"%{q}%"))
+        .distinct()
+        .limit(20)
+        .all()
+    )
+    return [{"artist_name": r[0]} for r in results]
+
+# Search for songs (for autocomplete/search functionality)
+@app.get("/search/songs")
+def search_songs(q: str, db: Session = Depends(get_db)):
+    """Search for songs by title"""
+    results = (
+        db.query(DimSong.song_title, DimArtist.artist_name)
+        .join(FactPlays, FactPlays.song_id == DimSong.song_id)
+        .join(DimArtist, DimArtist.artist_id == FactPlays.artist_id)
+        .filter(DimSong.song_title.ilike(f"%{q}%"))
+        .distinct()
+        .limit(20)
+        .all()
+    )
+    return [{"song_title": r[0], "artist_name": r[1]} for r in results]
+
+# Artist trend over time
+@app.get("/trends/artist/{artist_name}")
+def get_artist_trend(artist_name: str, db: Session = Depends(get_db)):
+    """Get daily play counts for a specific artist"""
+    results = (
+        db.query(DimTime.date, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.time_key == DimTime.time_key)
+        .join(DimArtist, DimArtist.artist_id == FactPlays.artist_id)
+        .filter(DimArtist.artist_name.ilike(f"%{artist_name}%"))
+        .group_by(DimTime.date)
+        .order_by(DimTime.date)
+        .all()
+    )
+    return [{"date": str(r[0]), "play_count": r[1]} for r in results]
+
+# Song trend over time
+@app.get("/trends/song")
+def get_song_trend(song_title: str, artist_name: str, db: Session = Depends(get_db)):
+    """Get daily play counts for a specific song"""
+    results = (
+        db.query(DimTime.date, func.count(FactPlays.play_id).label("play_count"))
+        .join(FactPlays, FactPlays.time_key == DimTime.time_key)
+        .join(DimSong, DimSong.song_id == FactPlays.song_id)
+        .join(DimArtist, DimArtist.artist_id == FactPlays.artist_id)
+        .filter(DimSong.song_title.ilike(f"%{song_title}%"))
+        .filter(DimArtist.artist_name.ilike(f"%{artist_name}%"))
+        .group_by(DimTime.date)
+        .order_by(DimTime.date)
+        .all()
+    )
+    return [{"date": str(r[0]), "play_count": r[1]} for r in results]
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

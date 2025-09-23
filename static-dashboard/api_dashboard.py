@@ -183,7 +183,8 @@ def main():
         ("🌍 Geographic Analysis", "🌍"),
         ("⏰ Time Patterns", "⏰"),
         ("📅 Date Range Analysis", "📅"),
-        ("🗺️ State Analysis", "🗺️")
+        ("🗺️ State Analysis", "🗺️"),
+        ("📈 Trend Analysis", "📈")
     ]
     
     for view_name, emoji in views:
@@ -216,6 +217,8 @@ def main():
         show_date_range_analysis()
     elif analysis_view == "🗺️ State Analysis":
         show_state_analysis()
+    elif analysis_view == "📈 Trend Analysis":
+        show_trend_analysis()
 
 def show_overview(data):
     """Display overview dashboard"""
@@ -470,8 +473,88 @@ def show_state_analysis():
         except Exception as e:
             st.error(f"Error fetching data for {state}: {str(e)}")
 
-
+def show_trend_analysis():
+    """Display trend analysis for individual songs and artists"""
+    st.header("📈 Trend Analysis")
+    st.markdown("Track the popularity of specific songs or artists over time.")
     
+    # Analysis type selection
+    analysis_type = st.radio("What would you like to analyze?", ["🎤 Artist Trends", "🎵 Song Trends"], horizontal=True)
+    
+    if analysis_type == "🎤 Artist Trends":
+        st.subheader("🎤 Artist Trend Analysis")
+        artist_query = st.text_input("Search for an artist:", placeholder="e.g., Coldplay, Kings Of Leon")
+        if artist_query and len(artist_query) >= 2:
+            search_results = fetch_api_data(f"/search/artists?q={artist_query}")
+            if search_results:
+                artist_options = [result["artist_name"] for result in search_results]
+                selected_artist = st.selectbox("Select an artist:", artist_options)
+                if selected_artist:
+                    trend_data = fetch_api_data(f"/trends/artist/{selected_artist}")
+                    if trend_data and len(trend_data) > 0:
+                        df_trend = pd.DataFrame(trend_data)
+                        df_trend['date'] = pd.to_datetime(df_trend['date'])
+                        fig_trend = px.line(
+                            df_trend,
+                            x='date',
+                            y='play_count',
+                            title=f'Daily Play Count Trend for {selected_artist}',
+                            markers=True
+                        )
+                        fig_trend.update_layout(
+                            xaxis_title="Date",
+                            yaxis_title="Daily Plays",
+                            height=500
+                        )
+                        fig_trend = apply_dark_theme(fig_trend)
+                        st.plotly_chart(fig_trend, use_container_width=True)
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("Total Plays", f"{df_trend['play_count'].sum():,}")
+                        col2.metric("Peak Day", f"{df_trend['play_count'].max():,}")
+                        col3.metric("Average Daily", f"{df_trend['play_count'].mean():.1f}")
+                    else:
+                        st.warning(f"No trend data found for {selected_artist}")
+            else:
+                st.info("No artists found matching your search. Try a different search term.")
+    elif analysis_type == "🎵 Song Trends":
+        st.subheader("🎵 Song Trend Analysis")
+        song_query = st.text_input("Search for a song:", placeholder="e.g., You're The One, Undo")
+        if song_query and len(song_query) >= 2:
+            search_results = fetch_api_data(f"/search/songs?q={song_query}")
+            if search_results:
+                song_options = [f"{result['song_title']} by {result['artist_name']}" for result in search_results]
+                selected_song_combo = st.selectbox("Select a song:", song_options)
+                if selected_song_combo:
+                    song_title = selected_song_combo.split(" by ")[0]
+                    artist_name = selected_song_combo.split(" by ")[1]
+                    trend_data = fetch_api_data(f"/trends/song?song_title={song_title}&artist_name={artist_name}")
+                    if trend_data and len(trend_data) > 0:
+                        df_trend = pd.DataFrame(trend_data)
+                        df_trend['date'] = pd.to_datetime(df_trend['date'])
+                        fig_trend = px.line(
+                            df_trend,
+                            x='date',
+                            y='play_count',
+                            title=f'Daily Play Count Trend for "{song_title}" by {artist_name}',
+                            markers=True,
+                            color_discrete_sequence=['#FF6B6B']
+                        )
+                        fig_trend.update_layout(
+                            xaxis_title="Date",
+                            yaxis_title="Daily Plays",
+                            height=500
+                        )
+                        fig_trend = apply_dark_theme(fig_trend)
+                        st.plotly_chart(fig_trend, use_container_width=True)
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("Total Plays", f"{df_trend['play_count'].sum():,}")
+                        col2.metric("Peak Day", f"{df_trend['play_count'].max():,}")
+                        col3.metric("Average Daily", f"{df_trend['play_count'].mean():.1f}")
+                    else:
+                        st.warning(f"No trend data found for '{song_title}' by {artist_name}")
+            else:
+                st.info("No songs found matching your search. Try a different search term.")
+
 def show_date_range_analysis():
     """Display date range analysis section"""
     st.header("📅 Date Range Analysis")
