@@ -4,8 +4,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 import requests
-import json
-from datetime import datetime
+import datetime
 import folium
 from folium import plugins
 from streamlit_folium import st_folium
@@ -84,6 +83,9 @@ def load_dashboard_data():
         return None
     
     data = {}
+    
+    # Metadata
+    data['metadata'] = fetch_api_data("/metadata")
     
     # User Analytics
     data['daily_active_users'] = fetch_api_data("/user_analytics/daily_active_users")
@@ -165,13 +167,38 @@ def main():
         st.stop()
     
     # --- SIDEBAR FILTERS ---
-    st.sidebar.header("🎛️ Dashboard Filters")
+    st.sidebar.header("🎛️ Dashboard Navigation")
     
-    analysis_view = st.sidebar.selectbox(
-        "Choose Analysis View",
-        ["📊 Overview", "🎵 Content Analytics", "👥 User Demographics", 
-         "🌍 Geographic Analysis", "⏰ Time Patterns"]
-    )
+    # Initialize session state for active view
+    if 'active_view' not in st.session_state:
+        st.session_state.active_view = "📊 Overview"
+    
+    # Create buttons for each analysis view
+    st.sidebar.markdown("### Choose Analysis View")
+    
+    views = [
+        ("📊 Overview", "📊"),
+        ("🎵 Content Analytics", "🎵"), 
+        ("👥 User Demographics", "👥"),
+        ("🌍 Geographic Analysis", "🌍"),
+        ("⏰ Time Patterns", "⏰"),
+        ("📅 Date Range Analysis", "📅"),
+        ("🗺️ State Analysis", "🗺️")
+    ]
+    
+    for view_name, emoji in views:
+        if st.sidebar.button(
+            f"{emoji} {view_name.split(' ', 1)[1]}", 
+            key=f"btn_{view_name}",
+            use_container_width=True
+        ):
+            st.session_state.active_view = view_name
+    
+    # Get the current active view
+    analysis_view = st.session_state.active_view
+    
+    # Show current active view
+    st.sidebar.markdown(f"**Active:** {analysis_view}")
     
     # --- MAIN CONTENT BASED ON SELECTION ---
     
@@ -185,6 +212,10 @@ def main():
         show_geographic_analysis(data)
     elif analysis_view == "⏰ Time Patterns":
         show_time_patterns(data)
+    elif analysis_view == "📅 Date Range Analysis":
+        show_date_range_analysis()
+    elif analysis_view == "🗺️ State Analysis":
+        show_state_analysis()
 
 def show_overview(data):
     """Display overview dashboard"""
@@ -194,8 +225,8 @@ def show_overview(data):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if data['daily_active_users']:
-            total_users = len(data['daily_active_users'])
+        if data['metadata']:
+            total_users = data['metadata']['total_users']
             st.metric("👥 Total Users", f"{total_users:,}")
     
     with col2:
@@ -204,8 +235,8 @@ def show_overview(data):
             st.metric("🎵 Avg Plays/Session", f"{avg_plays:.1f}")
     
     with col3:
-        if data['subscription_levels']:
-            total_plays = sum([level['play_count'] for level in data['subscription_levels']])
+        if data['metadata']:
+            total_plays = data['metadata']['total_listen_events']
             st.metric("🎧 Total Plays", f"{total_plays:,}")
     
     with col4:
@@ -273,7 +304,7 @@ def show_content_analytics(data):
         if data['top_songs']:
             df_songs = pd.DataFrame(data['top_songs'][:10])
             # Create combined labels for better display
-            df_songs['song_artist'] = df_songs['song_title'] + ' - ' + df_songs['artist_name']
+            df_songs['song_artist'] = df_songs['song_title'] + ' - ' + df_songs['artist']
             fig_songs = px.bar(
                 df_songs,
                 x='play_count',
@@ -388,69 +419,108 @@ def show_time_patterns(data):
         st.info(f"🎯 Peak listening hour: **{peak_hour['hour']}:00** with **{peak_hour['play_count']}** plays")
 
 # --- ADVANCED API INTEGRATION ---
-def show_advanced_api_features():
-    """Demonstrate advanced API integration features"""
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🔧 Advanced Features")
+def show_state_analysis():
+    """Display state-specific analysis"""
+    st.header("️ State-Specific Analysis")
     
-    # Dynamic state selection
-    if st.sidebar.checkbox("🗺️ State-Specific Analysis"):
-        # Get available states dynamically
-        available_states_data = fetch_api_data("/content_analytics/available_states")
-        available_states = [state["state"] for state in available_states_data] if available_states_data else ["CA", "TX", "NY", "FL", "IL"]
-        state = st.sidebar.selectbox("Select State", available_states)
+    # Get available states dynamically
+    available_states_data = fetch_api_data("/content_analytics/available_states")
+    available_states = [state["state"] for state in available_states_data] if available_states_data else ["CA", "TX", "NY", "FL", "IL"]
+    
+    # State selection
+    state = st.selectbox("Select State for Analysis", available_states, key="state_selector")
+    
+    if state:
+        st.subheader(f"📍 Music Trends in {state}")
         
-        if state:
-            st.subheader(f"📍 Analysis for {state}")
-            
-            # Fetch state-specific data
+        # Fetch state-specific data
+        try:
             state_artists = fetch_api_data(f"/content_analytics/popular_artists_by_state/{state}")
             state_songs = fetch_api_data(f"/content_analytics/popular_songs_by_state/{state}")
             
             col1, col2 = st.columns(2)
             
             with col1:
-                if state_artists:
-                    st.markdown("**🎤 Top Artists**")
-                    for artist in state_artists[:5]:
+                st.markdown("### 🎤 Top Artists")
+                if state_artists and len(state_artists) > 0:
+                    for i, artist in enumerate(state_artists[:10], 1):
                         if isinstance(artist, dict) and 'artist' in artist and 'play_count' in artist:
-                            st.markdown(f"• {artist['artist']} ({artist['play_count']} plays)")
+                            st.markdown(f"{i}. **{artist['artist']}** - {artist['play_count']:,} plays")
                         else:
-                            st.markdown(f"• {artist}")  # Fallback for malformed data
+                            st.markdown(f"{i}. {artist}")
+                else:
+                    st.info("No artist data available for this state.")
             
             with col2:
-                if state_songs:
-                    st.markdown("**🎵 Top Songs**")
-                    for song in state_songs[:5]:
+                st.markdown("### 🎵 Top Songs")
+                if state_songs and len(state_songs) > 0:
+                    for i, song in enumerate(state_songs[:10], 1):
                         if isinstance(song, dict) and 'song' in song and 'artist' in song:
-                            st.markdown(f"• {song['song']} by {song['artist']}")
+                            st.markdown(f"{i}. **{song['song']}** by {song['artist']}")
                         else:
-                            st.markdown(f"• {song}")  # Fallback for malformed data
-    
-    # Date range analysis
-    if st.sidebar.checkbox("📅 Date Range Analysis"):
-        col1, col2 = st.sidebar.columns(2)
-        start_date = col1.date_input("Start Date")
-        end_date = col2.date_input("End Date")
-        
-        if start_date and end_date:
-            # Fetch date range data
-            range_data = fetch_api_data(f"/content_analytics/popular_artists_by_date_range?start_date={start_date}&end_date={end_date}")
-            
-            if range_data:
-                st.subheader(f"📅 Trends: {start_date} to {end_date}")
-                df_range = pd.DataFrame(range_data[:10])
+                            st.markdown(f"{i}. {song}")
+                else:
+                    st.info("No song data available for this state.")
+                    
+            # Show total plays for the state
+            if state_artists:
+                total_plays = sum([artist.get('play_count', 0) for artist in state_artists if isinstance(artist, dict)])
+                st.metric(f"Total Plays in {state}", f"{total_plays:,}")
                 
-                fig_range = px.bar(
-                    df_range,
-                    x='artist',
-                    y='play_count',
-                    title=f'Top Artists ({start_date} to {end_date})'
-                )
-                fig_range.update_xaxes(tickangle=45)
-                fig_range = apply_dark_theme(fig_range)
-                st.plotly_chart(fig_range, use_container_width=True)
+        except Exception as e:
+            st.error(f"Error fetching data for {state}: {str(e)}")
+
+
+    
+def show_date_range_analysis():
+    """Display date range analysis section"""
+    st.header("📅 Date Range Analysis")
+    
+    # Default to a reasonable date range from the metadata
+    from datetime import datetime, date
+    default_start = date(2023, 9, 12)
+    default_end = date(2023, 9, 20)
+    
+    col1, col2 = st.columns(2)
+    start_date = col1.date_input("Start Date", value=default_start)
+    end_date = col2.date_input("End Date", value=default_end)
+    
+    if start_date and end_date:
+        if start_date <= end_date:
+            st.info(f"Analyzing data from {start_date} to {end_date}")
+            
+            # Fetch date range data
+            try:
+                range_data = fetch_api_data(f"/content_analytics/popular_artists_by_date_range?start_date={start_date}&end_date={end_date}")
+                
+                if range_data and len(range_data) > 0:
+                    st.subheader(f"🎤 Top Artists: {start_date} to {end_date}")
+                    df_range = pd.DataFrame(range_data[:10])
+                    
+                    fig_range = px.bar(
+                        df_range,
+                        x='play_count',
+                        y='artist',
+                        orientation='h',
+                        title=f'Top Artists ({start_date} to {end_date})',
+                        color='play_count',
+                        color_continuous_scale='Blues'
+                    )
+                    fig_range.update_layout(height=400)
+                    fig_range = apply_dark_theme(fig_range)
+                    st.plotly_chart(fig_range, use_container_width=True)
+                    
+                    # Show some stats
+                    total_plays = sum([artist['play_count'] for artist in range_data])
+                    st.metric("Total Plays in Period", f"{total_plays:,}")
+                    
+                else:
+                    st.warning("No data found for the selected date range. Try selecting different dates.")
+                    
+            except Exception as e:
+                st.error(f"Error fetching date range data: {str(e)}")
+        else:
+            st.error("Start date must be before or equal to end date.")
 
 if __name__ == "__main__":
     main()
-    show_advanced_api_features()

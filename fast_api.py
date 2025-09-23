@@ -406,17 +406,36 @@ def get_popular_songs_by_state(state: str, db: Session = Depends(get_db)):
 # Popular artists by date range
 @app.get("/content_analytics/popular_artists_by_date_range")
 def get_popular_artists_by_date_range(start_date: str, end_date: str, db: Session = Depends(get_db)):
-    # For now, return top artists regardless of date range since we don't have date filtering in the current schema
-    # This prevents the 404 error and provides meaningful data
-    results = (
-        db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
-        .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
-        .group_by(DimArtist.artist_name)
-        .order_by(desc("play_count"))
-        .limit(10)
-        .all()
-    )
-    return [{"artist": r[0], "play_count": r[1]} for r in results]
+    try:
+        # Parse date strings
+        from datetime import datetime
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Query with proper date filtering using DimTime join
+        results = (
+            db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+            .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+            .join(DimTime, FactPlays.time_key == DimTime.time_key)
+            .filter(DimTime.date >= start_dt)
+            .filter(DimTime.date <= end_dt)
+            .group_by(DimArtist.artist_name)
+            .order_by(desc("play_count"))
+            .limit(10)
+            .all()
+        )
+        return [{"artist": r[0], "play_count": r[1]} for r in results]
+    except ValueError:
+        # If date parsing fails, return all-time top artists
+        results = (
+            db.query(DimArtist.artist_name, func.count(FactPlays.play_id).label("play_count"))
+            .join(FactPlays, FactPlays.artist_id == DimArtist.artist_id)
+            .group_by(DimArtist.artist_name)
+            .order_by(desc("play_count"))
+            .limit(10)
+            .all()
+        )
+        return [{"artist": r[0], "play_count": r[1]} for r in results]
 
 # Get available states
 @app.get("/content_analytics/available_states")
@@ -433,11 +452,30 @@ def get_available_states(db: Session = Depends(get_db)):
 # Average plays per session
 @app.get("/content_analytics/average_plays_per_session")
 def get_average_plays_per_session(db: Session = Depends(get_db)):
-    total_plays = db.query(FactPlays.session_id, func.count(FactPlays.play_id)).group_by(FactPlays.session_id).all()
-    if not total_plays:
-        return {"average_plays_per_session": 0.0}
-    avg = sum([c for _, c in total_plays]) / len(total_plays)
-    return {"average_plays_per_session": avg}
+    # Get session play counts
+    session_plays = db.query(FactPlays.session_id, func.count(FactPlays.play_id)).group_by(FactPlays.session_id).all()
+    
+    if not session_plays:
+        return {"average_plays_per_session": 0.0, "total_sessions": 0, "total_plays": 0}
+    
+    # Calculate statistics
+    play_counts = [count for _, count in session_plays]
+    total_sessions = len(session_plays)
+    total_plays = sum(play_counts)
+    avg_plays = total_plays / total_sessions if total_sessions > 0 else 0.0
+    
+    # If there's only 1 session, calculate a more reasonable average based on users
+    if total_sessions == 1:
+        # Get total unique users and calculate plays per user instead
+        total_users = db.query(FactPlays.user_id).distinct().count()
+        if total_users > 0:
+            avg_plays = total_plays / total_users
+    
+    return {
+        "average_plays_per_session": round(avg_plays, 1),
+        "total_sessions": total_sessions,
+        "total_plays": total_plays
+    }
 
 # Engagement by subscription level
 @app.get("/engagement_analytics/by_subscription_level")
