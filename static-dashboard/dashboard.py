@@ -892,28 +892,117 @@ else:
             # Filter geographic data for selected states
             filtered_geo = geo_data[geo_data['state'].isin(selected_states)]
             
-            col1, col2 = st.columns(2)
+            if len(filtered_geo) > 0:
+                # Calculate average plays per city for each state
+                filtered_geo = filtered_geo.copy()
+                filtered_geo['avg_plays_per_city'] = filtered_geo['total_plays'] / filtered_geo['cities_count']
+                
+                # Create three columns for comprehensive analysis
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown("**� Total Plays by State**")
+                    fig_state_plays = px.bar(
+                        filtered_geo.sort_values('total_plays', ascending=True), 
+                        x='total_plays', 
+                        y='state', 
+                        orientation='h',
+                        title='Total Plays by Selected States',
+                        color='total_plays',
+                        color_continuous_scale=NEON_COLORS
+                    )
+                    fig_state_plays.update_layout(
+                        yaxis={'categoryorder':'total ascending'},
+                        xaxis_title='Total Plays',
+                        yaxis_title=None,
+                        coloraxis_showscale=False,
+                        height=400  # Match other chart heights
+                    )
+                    fig_state_plays.update_traces(
+                        hovertemplate='<b>%{y}</b><br>%{x:,} total plays<extra></extra>',
+                        texttemplate='%{x:,}',
+                        textposition='outside',
+                        textfont=dict(color='#fafafa', size=14, family='Arial Black')
+                    )
+                    fig_state_plays = apply_dark_theme(fig_state_plays)
+                    st.plotly_chart(fig_state_plays, use_container_width=True)
+                
+                with col2:
+                    st.markdown("**🏙️ Number of Cities per State**")
+                    fig_state_cities = px.bar(
+                        filtered_geo.sort_values('cities_count', ascending=True), 
+                        x='cities_count', 
+                        y='state', 
+                        orientation='h',
+                        title='Cities Count by Selected States',
+                        color='cities_count',
+                        color_continuous_scale=NEON_COLORS
+                    )
+                    fig_state_cities.update_layout(
+                        yaxis={'categoryorder':'total ascending'},
+                        xaxis_title='Number of Cities',
+                        yaxis_title=None,
+                        coloraxis_showscale=False,
+                        height=400
+                    )
+                    fig_state_cities.update_traces(
+                        hovertemplate='<b>%{y}</b><br>%{x} cities<extra></extra>',
+                        texttemplate='%{x}',
+                        textposition='outside',
+                        textfont=dict(color='#fafafa', size=14, family='Arial Black')
+                    )
+                    fig_state_cities = apply_dark_theme(fig_state_cities)
+                    st.plotly_chart(fig_state_cities, use_container_width=True)
+                
+                with col3:
+                    st.markdown("**📊 Average Plays per City**")
+                    fig_avg_plays = px.bar(
+                        filtered_geo.sort_values('avg_plays_per_city', ascending=True), 
+                        x='avg_plays_per_city', 
+                        y='state', 
+                        orientation='h',
+                        title='Avg Plays per City by State',
+                        color='avg_plays_per_city',
+                        color_continuous_scale=NEON_COLORS
+                    )
+                    fig_avg_plays.update_layout(
+                        yaxis={'categoryorder':'total ascending'},
+                        xaxis_title='Average Plays per City',
+                        yaxis_title=None,
+                        coloraxis_showscale=False,
+                        height=400
+                    )
+                    fig_avg_plays.update_traces(
+                        hovertemplate='<b>%{y}</b><br>%{x:,.0f} avg plays/city<extra></extra>',
+                        texttemplate='%{x:,.0f}',
+                        textposition='outside',
+                        textfont=dict(color='#fafafa', size=14, family='Arial Black')
+                    )
+                    fig_avg_plays = apply_dark_theme(fig_avg_plays)
+                    st.plotly_chart(fig_avg_plays, use_container_width=True)
+                
+                # Add a summary metrics row below the charts
+                st.markdown("### 📈 Selected States Summary")
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    total_plays = filtered_geo['total_plays'].sum()
+                    st.metric("Total Plays", f"{total_plays:,}")
+                
+                with col2:
+                    total_cities = filtered_geo['cities_count'].sum()
+                    st.metric("Total Cities", f"{total_cities}")
+                
+                with col3:
+                    avg_plays_overall = total_plays / total_cities if total_cities > 0 else 0
+                    st.metric("Overall Avg Plays/City", f"{avg_plays_overall:,.0f}")
+                
+                with col4:
+                    num_states = len(filtered_geo)
+                    st.metric("States Selected", f"{num_states}")
             
-            with col1:
-                st.markdown("**🌆 State Activity Summary**")
-                for _, row in filtered_geo.iterrows():
-                    st.markdown(f"**{row['state']}:**")
-                    st.markdown(f"  • Total Plays: {row['total_plays']:,}")
-                    st.markdown(f"  • Cities: {row['cities_count']}")
-                    st.markdown(f"  • Avg Plays/City: {row['total_plays']/row['cities_count']:,.0f}")
-            
-            with col2:
-                st.markdown("**📊 Comparative Analysis**")
-                if len(filtered_geo) > 1:
-                    # Create comparison chart
-                    fig_compare = px.bar(filtered_geo, x='state', y='total_plays',
-                                       title='Selected States Comparison',
-                                       color='total_plays',
-                                       color_continuous_scale=NEON_COLORS)
-                    fig_compare = apply_dark_theme(fig_compare)
-                    st.plotly_chart(fig_compare, use_container_width=True)
-                else:
-                    st.markdown("Select multiple states to see comparison.")
+            else:
+                st.warning("No data available for the selected states.")
         
         # --- GEOGRAPHIC CONCENTRATION ---
         st.subheader("📍 Geographic Activity Hotspots")
