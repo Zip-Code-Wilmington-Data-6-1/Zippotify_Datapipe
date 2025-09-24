@@ -105,9 +105,11 @@ age_distribution = age_distribution.sort_values(by='age')
 genre_popularity = listen['genre'].value_counts().reset_index()
 genre_popularity.columns = ['genre', 'play_count']
 
-# Top artists
-top_artists = listen['artist'].value_counts().head(20).reset_index()
+# Top artists (excluding corrupted entries)
+top_artists = listen['artist'].value_counts().head(25).reset_index()
 top_artists.columns = ['artist', 'play_count']
+# Filter out corrupted Björk entries
+top_artists = top_artists[~top_artists['artist'].str.contains('BjÃÂ¶rk|Bj.*rk', na=False, regex=True)].head(20)
 
 # Top songs
 top_songs = listen.groupby(['artist', 'song']).size().reset_index(name='play_count')
@@ -135,7 +137,9 @@ top_song_per_state = top_songs_by_state[top_songs_by_state['rank'] == 1][['state
 # Top artists by state (top 5 artists per state)
 def get_top_artists_by_state(df, top_n=5):
     """Get top N artists for each state"""
-    state_artists = df.groupby(['state', 'artist']).size().reset_index(name='play_count')
+    # Filter out corrupted entries first
+    df_clean = df[~df['artist'].str.contains('BjÃÂ¶rk|Bj.*rk', na=False, regex=True)]
+    state_artists = df_clean.groupby(['state', 'artist']).size().reset_index(name='play_count')
     
     # Get top artists per state
     top_artists_by_state = []
