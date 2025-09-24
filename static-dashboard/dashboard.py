@@ -1203,7 +1203,7 @@ elif show_images:
     elif st.session_state.get('show_data_model', False):
         st.image("/Users/iara/Projects/Zippotify_Datapipe/StarSchemaDataModel.png", use_container_width=True)
     elif st.session_state.get('show_qr_code', False):
-        st.image("/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/QRCodeForRepo.png", use_container_width=True)
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/QRCode.png", use_container_width=True)
 
 else:
     # --- HEADER ---
