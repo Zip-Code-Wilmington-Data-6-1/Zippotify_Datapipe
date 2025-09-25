@@ -151,7 +151,7 @@ class SimpleDataBot:
                 peak_plays = int(peak_row['play_count'])
                 simple_data += f"- Peak hour: {peak_hour}:00 with {peak_plays:,} plays\n"
             
-            system_prompt = f"""You are TracktionAI, an expert music streaming data analyst. You have access to a comprehensive 11GB dataset from a music streaming platform.
+            system_prompt = f"""You are TracktionAi, an expert music streaming data analyst. You have access to a comprehensive 11GB dataset from a music streaming platform.
 
 AVAILABLE DATA:
 {simple_data}
@@ -357,7 +357,7 @@ NEON_COLORS = [
 
 # --- CONFIG ---
 st.set_page_config(
-    page_title="🎧 TracktionAI Analytics Dashboard", 
+    page_title="🎧 TracktionAi Analytics Dashboard", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -501,7 +501,7 @@ st.markdown("""
         font-weight: bold !important;
     }
     
-    /* Specific styling for TracktionAI Chat section */
+    /* Specific styling for TracktionAi Chat section */
     div[data-testid="stTextInput"] label {
         font-size: 28px !important;
         font-weight: bold !important;
@@ -902,7 +902,7 @@ engagement_analytics = aggregated_data['engagement_analytics']
 st.sidebar.header("🎛️ Dashboard Filters")
 
 # Add Logo, Tech Stack, Data Model, and QR Code buttons stacked vertically
-if st.sidebar.button("🎵 Logo", key="logo_btn", help="View TracktionAI Logo"):
+if st.sidebar.button("🎵 Logo", key="logo_btn", help="View TracktionAi Logo"):
     st.session_state.show_logo = True
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
@@ -980,7 +980,7 @@ if st.sidebar.button("📊 Data Model", key="data_model_btn", help="View Star Sc
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
     st.session_state.just_clicked_button = True
 
-if st.sidebar.button("🤖 TracktionAI Chat", key="tracktion_ai_btn", help="Chat with TracktionAI Assistant"):
+if st.sidebar.button("🤖 TracktionAi Chat", key="tracktion_ai_btn", help="Chat with TracktionAi Assistant"):
     st.session_state.show_tracktion_ai = True
     st.session_state.show_logo = False  
     st.session_state.show_genres = False
@@ -1039,7 +1039,7 @@ if 'show_qr_code' not in st.session_state:
 if 'show_tracktion_ai' not in st.session_state:
     st.session_state.show_tracktion_ai = False
 
-# Check if images are currently showing (excluding TracktionAI Chat)
+# Check if images are currently showing (excluding TracktionAi Chat)
 show_images_currently = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_docker', False) or st.session_state.get('show_pyspark', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_raw_cleaned_data', False) or st.session_state.get('show_qr_code', False)
 
 # Create dropdown with different behavior when images are showing
@@ -1068,7 +1068,7 @@ st.session_state.just_clicked_button = False
 # Add logic to clear images when dropdown is used from image state
 # This happens after the dropdown selection, preventing state inconsistency  
 if show_images_currently and not just_clicked_button:
-    # Always clear images when switching to any analysis tab via dropdown (but preserve TracktionAI)
+    # Always clear images when switching to any analysis tab via dropdown (but preserve TracktionAi)
     st.session_state.show_logo = False
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
@@ -1086,19 +1086,19 @@ show_images = st.session_state.get('show_logo', False) or st.session_state.get('
 show_tracktion_ai = st.session_state.get('show_tracktion_ai', False)
 
 if show_tracktion_ai:
-    # PRIORITY: Show TracktionAI Chat Interface (highest priority to prevent redirects)
+    # PRIORITY: Show TracktionAi Chat Interface (highest priority to prevent redirects)
     
-    # Add custom CSS for larger TracktionAI fonts (93% increase - reduced by 10% from 103%)
+    # Add custom CSS for larger TracktionAi fonts (93% increase - reduced by 10% from 103%)
     st.markdown("""
     <style>
-    /* TracktionAI Chat Interface - 93% Larger Fonts - Direct Targeting */
+    /* TracktionAi Chat Interface - 93% Larger Fonts - Direct Targeting */
     
-    /* Global override for TracktionAI section when active */
+    /* Global override for TracktionAi section when active */
     div[data-testid="stAppViewContainer"] div[data-testid="stVerticalBlock"] {
         font-size: 1.83em !important;
     }
     
-    /* Headers in TracktionAI */
+    /* Headers in TracktionAi */
     .tracktion-ai-active h1,
     .tracktion-ai-active h2,
     .tracktion-ai-active h3,
@@ -1141,7 +1141,7 @@ if show_tracktion_ai:
         font-size: 1.83em !important;
     }
     
-    /* Alternative approach - target all elements when TracktionAI is showing */
+    /* Alternative approach - target all elements when TracktionAi is showing */
     body.tracktion-ai-mode * {
         font-size: 183% !important;
     }
@@ -1154,20 +1154,20 @@ if show_tracktion_ai:
     </style>
     """, unsafe_allow_html=True)
     
-    # Add JavaScript to apply body class when TracktionAI is active
+    # Add JavaScript to apply body class when TracktionAi is active
     st.markdown("""
     <script>
     document.body.classList.add('tracktion-ai-mode');
     </script>
     """, unsafe_allow_html=True)
     
-    st.markdown('<h2 style="font-size: 3.27em; font-weight: bold;">🤖 TracktionAI Assistant</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="font-size: 3.27em; font-weight: bold;">🤖 TracktionAi Assistant</h2>', unsafe_allow_html=True)
 
     # Initialize bot and chat history
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
     if 'bot' not in st.session_state:
-        with st.spinner("🔄 Initializing TracktionAI with 11GB dataset..."):
+        with st.spinner("🔄 Initializing TracktionAi with 11GB dataset..."):
             try:
                 # Use only CSV data for more reliable responses
                 st.session_state.bot = SimpleDataBot(csv_data, aggregated_data)
@@ -1272,7 +1272,7 @@ if show_tracktion_ai:
                 if user_msg and bot_msg:
                     with st.container():
                         st.markdown(f'<p style="font-size: 1.92em; font-weight: bold;"><strong>You:</strong> {user_msg}</p>', unsafe_allow_html=True)
-                        st.markdown(f'<div style="font-size: 1.92em; line-height: 1.6;"><strong>🤖 TracktionAI:</strong> {bot_msg}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size: 1.92em; line-height: 1.6;"><strong>🤖 TracktionAi:</strong> {bot_msg}</div>', unsafe_allow_html=True)
                         st.divider()
 
 elif show_images:
