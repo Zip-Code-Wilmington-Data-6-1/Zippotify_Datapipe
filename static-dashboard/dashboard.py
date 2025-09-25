@@ -905,6 +905,17 @@ st.sidebar.header("🎛️ Dashboard Filters")
 # Add Logo, Tech Stack, Data Model, and QR Code buttons stacked vertically
 if st.sidebar.button("🎵 Logo", key="logo_btn", help="View TracktionAI Logo"):
     st.session_state.show_logo = True
+    st.session_state.show_genres = False
+    st.session_state.show_tech_stack = False
+    st.session_state.show_data_model = False
+    st.session_state.show_qr_code = False
+    st.session_state.show_tracktion_ai = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
+    st.session_state.just_clicked_button = True
+
+if st.sidebar.button("🎨 Genres", key="genres_btn", help="View Genres Word Cloud"):
+    st.session_state.show_genres = True
+    st.session_state.show_logo = False
     st.session_state.show_tech_stack = False
     st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
@@ -915,6 +926,7 @@ if st.sidebar.button("🎵 Logo", key="logo_btn", help="View TracktionAI Logo"):
 if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technology Stack"):
     st.session_state.show_tech_stack = True
     st.session_state.show_logo = False
+    st.session_state.show_genres = False
     st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
@@ -924,6 +936,7 @@ if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technol
 if st.sidebar.button("📊 Data Model", key="data_model_btn", help="View Star Schema Data Model"):
     st.session_state.show_data_model = True
     st.session_state.show_logo = False
+    st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
@@ -933,6 +946,7 @@ if st.sidebar.button("📊 Data Model", key="data_model_btn", help="View Star Sc
 if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
     st.session_state.show_qr_code = True
     st.session_state.show_logo = False  
+    st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_data_model = False
     st.session_state.show_tracktion_ai = False
@@ -942,6 +956,7 @@ if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
 if st.sidebar.button("🤖 TracktionAI Chat", key="tracktion_ai_btn", help="Chat with TracktionAI Assistant"):
     st.session_state.show_tracktion_ai = True
     st.session_state.show_logo = False  
+    st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
@@ -951,6 +966,8 @@ if st.sidebar.button("🤖 TracktionAI Chat", key="tracktion_ai_btn", help="Chat
 # Initialize session state if not exists
 if 'show_logo' not in st.session_state:
     st.session_state.show_logo = False
+if 'show_genres' not in st.session_state:
+    st.session_state.show_genres = False
 if 'show_tech_stack' not in st.session_state:
     st.session_state.show_tech_stack = False
 if 'show_data_model' not in st.session_state:
@@ -961,7 +978,7 @@ if 'show_tracktion_ai' not in st.session_state:
     st.session_state.show_tracktion_ai = False
 
 # Check if images are currently showing (excluding TracktionAI Chat)
-show_images_currently = st.session_state.get('show_logo', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
+show_images_currently = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
 
 # Create dropdown with different behavior when images are showing
 if show_images_currently:
@@ -991,6 +1008,7 @@ st.session_state.just_clicked_button = False
 if show_images_currently and not just_clicked_button:
     # Always clear images when switching to any analysis tab via dropdown (but preserve TracktionAI)
     st.session_state.show_logo = False
+    st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
@@ -999,7 +1017,7 @@ if show_images_currently and not just_clicked_button:
 # === HANDLE IMAGE DISPLAYS OR DASHBOARD CONTENT ===
 
 # Check if we should show images/tracktionai or dashboard content
-show_images = st.session_state.get('show_logo', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
+show_images = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
 show_tracktion_ai = st.session_state.get('show_tracktion_ai', False)
 
 if show_tracktion_ai:
@@ -1198,6 +1216,8 @@ elif show_images:
     # Show only the requested image
     if st.session_state.get('show_logo', False):
         st.image("/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/Logo.png", use_container_width=True)
+    elif st.session_state.get('show_genres', False):
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/WordCloud.png", use_container_width=True)
     elif st.session_state.get('show_tech_stack', False):
         st.image("/Users/iara/Projects/Zippotify_Datapipe/TechStack.png", use_container_width=True)
     elif st.session_state.get('show_data_model', False):
