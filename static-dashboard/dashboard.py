@@ -26,7 +26,6 @@ class SimpleDataBot:
                 self.client = openai.OpenAI(api_key=openai_api_key)
                 self.use_openai = True
                 st.success("🤖 OpenAI API connected - Enhanced AI responses enabled!")
-                st.info("💡 Note: If you see quota errors, check your OpenAI billing at platform.openai.com")
             else:
                 self.use_openai = False
                 st.warning("⚠️ OpenAI API key not found - Using basic responses only")
@@ -981,6 +980,19 @@ if st.sidebar.button("📊 Data Model", key="data_model_btn", help="View Star Sc
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
     st.session_state.just_clicked_button = True
 
+if st.sidebar.button("🤖 TracktionAI Chat", key="tracktion_ai_btn", help="Chat with TracktionAI Assistant"):
+    st.session_state.show_tracktion_ai = True
+    st.session_state.show_logo = False  
+    st.session_state.show_genres = False
+    st.session_state.show_tech_stack = False
+    st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
+    st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
+    st.session_state.show_qr_code = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
+    st.session_state.just_clicked_button = True
+
 if st.sidebar.button("📈 Raw and Cleaned Data", key="raw_cleaned_data_btn", help="View Raw and Cleaned Data"):
     st.session_state.show_raw_cleaned_data = True
     st.session_state.show_logo = False
@@ -1004,19 +1016,6 @@ if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
     st.session_state.show_data_model = False
     st.session_state.show_raw_cleaned_data = False
     st.session_state.show_tracktion_ai = False
-    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
-    st.session_state.just_clicked_button = True
-
-if st.sidebar.button("🤖 TracktionAI Chat", key="tracktion_ai_btn", help="Chat with TracktionAI Assistant"):
-    st.session_state.show_tracktion_ai = True
-    st.session_state.show_logo = False  
-    st.session_state.show_genres = False
-    st.session_state.show_tech_stack = False
-    st.session_state.show_docker = False
-    st.session_state.show_pyspark = False
-    st.session_state.show_data_model = False
-    st.session_state.show_raw_cleaned_data = False
-    st.session_state.show_qr_code = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
     st.session_state.just_clicked_button = True
 
@@ -1089,14 +1088,14 @@ show_tracktion_ai = st.session_state.get('show_tracktion_ai', False)
 if show_tracktion_ai:
     # PRIORITY: Show TracktionAI Chat Interface (highest priority to prevent redirects)
     
-    # Add custom CSS for larger TracktionAI fonts (30% increase)
+    # Add custom CSS for larger TracktionAI fonts (93% increase - reduced by 10% from 103%)
     st.markdown("""
     <style>
-    /* TracktionAI Chat Interface - 30% Larger Fonts - Direct Targeting */
+    /* TracktionAI Chat Interface - 93% Larger Fonts - Direct Targeting */
     
     /* Global override for TracktionAI section when active */
     div[data-testid="stAppViewContainer"] div[data-testid="stVerticalBlock"] {
-        font-size: 1.3em !important;
+        font-size: 1.83em !important;
     }
     
     /* Headers in TracktionAI */
@@ -1104,7 +1103,7 @@ if show_tracktion_ai:
     .tracktion-ai-active h2,
     .tracktion-ai-active h3,
     .tracktion-ai-active h4 {
-        font-size: 1.3em !important;
+        font-size: 1.83em !important;
         font-weight: bold !important;
     }
     
@@ -1112,45 +1111,45 @@ if show_tracktion_ai:
     .tracktion-ai-active p,
     .tracktion-ai-active div,
     .tracktion-ai-active span {
-        font-size: 1.3em !important;
+        font-size: 1.83em !important;
     }
     
     /* Text inputs */
     .tracktion-ai-active div[data-testid="stTextInput"] label {
-        font-size: 1.6em !important;
+        font-size: 2.25em !important;
         font-weight: bold !important;
     }
     
     .tracktion-ai-active div[data-testid="stTextInput"] input {
-        font-size: 1.4em !important;
-        padding: 1.2rem !important;
+        font-size: 1.97em !important;
+        padding: 1.62rem !important;
     }
     
     /* Buttons */
     .tracktion-ai-active div[data-testid="stButton"] button {
-        font-size: 1.3em !important;
+        font-size: 1.83em !important;
         font-weight: bold !important;
-        padding: 1.2rem 1.5rem !important;
+        padding: 1.62rem 2.07rem !important;
     }
     
     /* Markdown content */
     .tracktion-ai-active div[data-testid="stMarkdownContainer"] {
-        font-size: 1.3em !important;
+        font-size: 1.83em !important;
     }
     
     .tracktion-ai-active div[data-testid="stMarkdownContainer"] p {
-        font-size: 1.3em !important;
+        font-size: 1.83em !important;
     }
     
     /* Alternative approach - target all elements when TracktionAI is showing */
     body.tracktion-ai-mode * {
-        font-size: 130% !important;
+        font-size: 183% !important;
     }
     
-    body.tracktion-ai-mode h1 { font-size: 200% !important; }
-    body.tracktion-ai-mode h2 { font-size: 180% !important; }
-    body.tracktion-ai-mode h3 { font-size: 160% !important; }
-    body.tracktion-ai-mode h4 { font-size: 140% !important; }
+    body.tracktion-ai-mode h1 { font-size: 282% !important; }
+    body.tracktion-ai-mode h2 { font-size: 253% !important; }
+    body.tracktion-ai-mode h3 { font-size: 225% !important; }
+    body.tracktion-ai-mode h4 { font-size: 197% !important; }
     
     </style>
     """, unsafe_allow_html=True)
@@ -1162,8 +1161,7 @@ if show_tracktion_ai:
     </script>
     """, unsafe_allow_html=True)
     
-    st.markdown('<h2 style="font-size: 2.9em; font-weight: bold;">🤖 TracktionAI Assistant</h2>', unsafe_allow_html=True)
-    st.markdown('<p style="font-size: 1.7em; font-style: italic;">Powered by 11GB music streaming dataset</p>', unsafe_allow_html=True)
+    st.markdown('<h2 style="font-size: 3.27em; font-weight: bold;">🤖 TracktionAI Assistant</h2>', unsafe_allow_html=True)
 
     # Initialize bot and chat history
     if 'chat_history' not in st.session_state:
@@ -1173,17 +1171,16 @@ if show_tracktion_ai:
             try:
                 # Use only CSV data for more reliable responses
                 st.session_state.bot = SimpleDataBot(csv_data, aggregated_data)
-                st.success("✅ TracktionAI ready with comprehensive music data!")
             except Exception as e:
                 st.error(f"Error initializing bot: {e}")
 
     # Main chat interface with larger text
-    st.markdown('<h3 style="font-size: 1.9em; font-weight: bold; color: #00FFFF;">💡 Ask Your Question:</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 style="font-size: 2.14em; font-weight: bold; color: #00FFFF;">💡 Ask Your Question:</h3>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([4, 1, 1])
     with col1:
         user_question = st.text_input("", 
-                                     placeholder="e.g., How many states are there?",
+                                     placeholder="e.g., Who is the most popular artist?",
                                      key="ai_question_input",
                                      label_visibility="collapsed")
         # Add custom styling for the text input and buttons
@@ -1191,17 +1188,17 @@ if show_tracktion_ai:
         <style>
         /* Style text input for larger font */
         div[data-testid="stTextInput"] input {
-            font-size: 1.7em !important;
-            padding: 1.4rem !important;
+            font-size: 1.92em !important;
+            padding: 1.58rem !important;
         }
         div[data-testid="stTextInput"] input::placeholder {
-            font-size: 1.5em !important;
+            font-size: 1.69em !important;
         }
         /* Style buttons for larger font */
         div[data-testid="stButton"] button {
-            font-size: 1.6em !important;
+            font-size: 1.8em !important;
             font-weight: bold !important;
-            padding: 1.4rem 1.8rem !important;
+            padding: 1.58rem 2.03rem !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -1226,7 +1223,7 @@ if show_tracktion_ai:
                 st.rerun()
 
     # Example questions with improved handling and larger text
-    st.markdown('<h3 style="font-size: 2.2em; font-weight: bold;">💡 Try These Questions:</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 style="font-size: 2.48em; font-weight: bold;">💡 Try These Questions:</h3>', unsafe_allow_html=True)
     
     def ask_example_question(question_text):
         """Helper function to handle example questions without navigation issues"""
@@ -1264,7 +1261,7 @@ if show_tracktion_ai:
 
     # Conversation history with larger text
     if st.session_state.chat_history:
-        st.markdown('<h3 style="font-size: 2.2em; font-weight: bold;">💬 Recent Conversation</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 style="font-size: 2.48em; font-weight: bold;">💬 Recent Conversation</h3>', unsafe_allow_html=True)
         # Show last 6 exchanges (3 Q&A pairs)
         recent_messages = st.session_state.chat_history[-6:]
         for i in range(0, len(recent_messages), 2):
@@ -1274,8 +1271,8 @@ if show_tracktion_ai:
                 
                 if user_msg and bot_msg:
                     with st.container():
-                        st.markdown(f'<p style="font-size: 1.7em; font-weight: bold;"><strong>You:</strong> {user_msg}</p>', unsafe_allow_html=True)
-                        st.markdown(f'<div style="font-size: 1.7em; line-height: 1.6;"><strong>🤖 TracktionAI:</strong> {bot_msg}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<p style="font-size: 1.92em; font-weight: bold;"><strong>You:</strong> {user_msg}</p>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size: 1.92em; line-height: 1.6;"><strong>🤖 TracktionAI:</strong> {bot_msg}</div>', unsafe_allow_html=True)
                         st.divider()
 
 elif show_images:
