@@ -908,7 +908,9 @@ if st.sidebar.button("🎵 Logo", key="logo_btn", help="View TracktionAI Logo"):
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
@@ -919,7 +921,9 @@ if st.sidebar.button("🎨 Genres", key="genres_btn", help="View Genres Word Clo
     st.session_state.show_logo = False
     st.session_state.show_tech_stack = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
@@ -930,7 +934,9 @@ if st.sidebar.button("🔧 Tech Stack", key="tech_stack_btn", help="View Technol
     st.session_state.show_logo = False
     st.session_state.show_genres = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
@@ -941,7 +947,22 @@ if st.sidebar.button("🐳 Docker", key="docker_btn", help="View Docker Configur
     st.session_state.show_logo = False
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
+    st.session_state.show_qr_code = False
+    st.session_state.show_tracktion_ai = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
+    st.session_state.just_clicked_button = True
+
+if st.sidebar.button("⚡ PySpark", key="pyspark_btn", help="View PySpark Configuration"):
+    st.session_state.show_pyspark = True
+    st.session_state.show_logo = False
+    st.session_state.show_genres = False
+    st.session_state.show_tech_stack = False
+    st.session_state.show_docker = False
+    st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
@@ -953,6 +974,21 @@ if st.sidebar.button("📊 Data Model", key="data_model_btn", help="View Star Sc
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
+    st.session_state.show_raw_cleaned_data = False
+    st.session_state.show_qr_code = False
+    st.session_state.show_tracktion_ai = False
+    # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
+    st.session_state.just_clicked_button = True
+
+if st.sidebar.button("📈 Raw and Cleaned Data", key="raw_cleaned_data_btn", help="View Raw and Cleaned Data"):
+    st.session_state.show_raw_cleaned_data = True
+    st.session_state.show_logo = False
+    st.session_state.show_genres = False
+    st.session_state.show_tech_stack = False
+    st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
+    st.session_state.show_data_model = False
     st.session_state.show_qr_code = False
     st.session_state.show_tracktion_ai = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)
@@ -964,7 +1000,9 @@ if st.sidebar.button("📱 QR Code", key="qr_code_btn", help="View QR Code"):
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_tracktion_ai = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
     st.session_state.just_clicked_button = True
@@ -975,7 +1013,9 @@ if st.sidebar.button("🤖 TracktionAI Chat", key="tracktion_ai_btn", help="Chat
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_qr_code = False
     # Set a flag to indicate we just clicked a button (don't clear images from dropdown logic)  
     st.session_state.just_clicked_button = True
@@ -989,15 +1029,19 @@ if 'show_tech_stack' not in st.session_state:
     st.session_state.show_tech_stack = False
 if 'show_docker' not in st.session_state:
     st.session_state.show_docker = False
+if 'show_pyspark' not in st.session_state:
+    st.session_state.show_pyspark = False
 if 'show_data_model' not in st.session_state:
     st.session_state.show_data_model = False
+if 'show_raw_cleaned_data' not in st.session_state:
+    st.session_state.show_raw_cleaned_data = False
 if 'show_qr_code' not in st.session_state:
     st.session_state.show_qr_code = False
 if 'show_tracktion_ai' not in st.session_state:
     st.session_state.show_tracktion_ai = False
 
 # Check if images are currently showing (excluding TracktionAI Chat)
-show_images_currently = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_docker', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
+show_images_currently = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_docker', False) or st.session_state.get('show_pyspark', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_raw_cleaned_data', False) or st.session_state.get('show_qr_code', False)
 
 # Create dropdown with different behavior when images are showing
 if show_images_currently:
@@ -1030,14 +1074,16 @@ if show_images_currently and not just_clicked_button:
     st.session_state.show_genres = False
     st.session_state.show_tech_stack = False
     st.session_state.show_docker = False
+    st.session_state.show_pyspark = False
     st.session_state.show_data_model = False
+    st.session_state.show_raw_cleaned_data = False
     st.session_state.show_qr_code = False
     # Note: We do NOT clear show_tracktion_ai here to prevent unwanted redirects
 
 # === HANDLE IMAGE DISPLAYS OR DASHBOARD CONTENT ===
 
 # Check if we should show images/tracktionai or dashboard content
-show_images = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_docker', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_qr_code', False)
+show_images = st.session_state.get('show_logo', False) or st.session_state.get('show_genres', False) or st.session_state.get('show_tech_stack', False) or st.session_state.get('show_docker', False) or st.session_state.get('show_pyspark', False) or st.session_state.get('show_data_model', False) or st.session_state.get('show_raw_cleaned_data', False) or st.session_state.get('show_qr_code', False)
 show_tracktion_ai = st.session_state.get('show_tracktion_ai', False)
 
 if show_tracktion_ai:
@@ -1245,8 +1291,12 @@ elif show_images:
         col1, col2, col3 = st.columns([0.15, 0.7, 0.15])
         with col2:
             st.image("/Users/iara/Projects/Zippotify_Datapipe/docker.png", use_container_width=True)
+    elif st.session_state.get('show_pyspark', False):
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/Pysparklogo.jpg", use_container_width=True)
     elif st.session_state.get('show_data_model', False):
         st.image("/Users/iara/Projects/Zippotify_Datapipe/StarSchemaDataModel.png", use_container_width=True)
+    elif st.session_state.get('show_raw_cleaned_data', False):
+        st.image("/Users/iara/Projects/Zippotify_Datapipe/CSVChartPicture.png", use_container_width=True)
     elif st.session_state.get('show_qr_code', False):
         st.image("/Users/iara/Projects/Zippotify_Datapipe/static-dashboard/QRCode.png", use_container_width=True)
 
