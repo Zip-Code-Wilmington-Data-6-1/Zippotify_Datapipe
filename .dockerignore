@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__/
+*.pyc
+data/
+output/
+notebooks/
+*.jsonl
+*.jsonl.gz
+*.parquet
+*.parquet.gz
+.DS_Store

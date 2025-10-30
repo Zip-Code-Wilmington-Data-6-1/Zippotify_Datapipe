@@ -1,0 +1,20 @@
+# Requirements for API-Enhanced Streamlit Dashboard
+# Existing dashboard requirements
+streamlit>=1.28.0
+plotly>=5.15.0
+pandas>=2.0.0
+folium>=0.14.0
+streamlit-folium>=0.13.0
+
+# New API integration requirements
+requests>=2.31.0
+httpx>=0.24.0  # Alternative HTTP client
+aiohttp>=3.8.0  # For async requests if needed
+
+# FastAPI client requirements (optional)
+fastapi>=0.100.0  # For Pydantic models compatibility
+pydantic>=2.0.0   # For data validation
+
+# Development/testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0

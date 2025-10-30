@@ -1,7 +1,21 @@
+# Large data files - exclude from Git
+*.json
+output/
+data/
+tmp/
+
+# Processing files that can get large
+*.log
+*.pid
+artist_genre_cache_*.pkl
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # C extensions
 *.so
@@ -191,3 +205,20 @@ tmp_*.jsonl
 
 # Local scratch
 tmp/
+
+# Keep small config files
+!requirements.txt
+!package.json
+!aggregated_music_data.json
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
